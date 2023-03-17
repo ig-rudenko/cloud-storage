@@ -1,8 +1,9 @@
 package main
 
 import (
-	"database/sql"
 	"fmt"
+	"golang.org/x/crypto/bcrypt"
+	"gorm.io/gorm"
 	"log"
 	"net/http"
 	"strconv"
@@ -11,13 +12,13 @@ import (
 
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
-	_ "github.com/go-sql-driver/mysql"
+	"gorm.io/driver/mysql"
 )
 
 // User is a struct that represents a user record in the database
 type User struct {
-	ID       int    `json:"id"`
-	Username string `json:"username"`
+	ID       uint   `json:"id" gorm:"primaryKey"`
+	Username string `json:"username" gorm:"unique"`
 	Password string `json:"password"`
 }
 
@@ -28,7 +29,7 @@ type TokenPair struct {
 }
 
 // DB is a global variable that holds the database connection
-var DB *sql.DB
+var DB *gorm.DB
 
 // SecretKey is a global variable that holds the secret key for signing and validating tokens
 var SecretKey = "mysecretkey"
@@ -91,22 +92,17 @@ func AuthMiddleware(secret string) gin.HandlerFunc {
 func main() {
 
 	var err error
+	dsn := "root:password@tcp(127.0.0.1:3306)/test_go?charset=utf8mb4&parseTime=True&loc=Local"
 	// Connect to the database using the username, password, host, port and database name
-	DB, err = sql.Open("mysql", "root:password@tcp(localhost:3306)/test_go")
+	DB, err = gorm.Open(mysql.Open(dsn), &gorm.Config{})
 	if err != nil {
-		log.Fatal(err)
+		panic("failed to connect to database")
 	}
-	defer func(DB *sql.DB) {
-		err := DB.Close()
-		if err != nil {
-			log.Fatal(err)
-		}
-	}(DB)
 
-	// Ping the database to check if it's alive
-	err = DB.Ping()
+	// Migrate the user model
+	err = DB.AutoMigrate(&User{})
 	if err != nil {
-		log.Fatal(err)
+		panic("failed to migrate database")
 	}
 
 	// Create a Gin router with default middleware
@@ -119,6 +115,8 @@ func main() {
 
 	// Define a route for generating tokens
 	router.POST("/token", generateToken)
+
+	router.POST("/register", createUser)
 
 	// Define a route for refreshing tokens
 	router.POST("/token/refresh", refreshToken)
@@ -138,30 +136,60 @@ func main() {
 	log.Fatal(router.Run(":8080"))
 }
 
+func createUser(c *gin.Context) {
+	// Bind the JSON data to a user struct
+	var user User
+	if err := c.ShouldBindJSON(&user); err != nil {
+		c.JSON(400, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Hash the password using bcrypt (you need to import "golang.org/x/crypto/bcrypt")
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
+	if err != nil {
+		c.JSON(500, gin.H{"error": "failed to hash password"})
+		return
+	}
+
+	// Set the hashed password to the user struct
+	user.Password = string(hashedPassword)
+
+	// Save the user to the database
+	if result := DB.Create(&user); result.Error != nil {
+		c.JSON(500, gin.H{"error": result.Error})
+		return
+	}
+
+	// Return the created user as JSON with status code 201
+	c.JSON(201, gin.H{"username": user.Username, "id": user.ID})
+}
+
 // generateToken is a handler function that creates and returns an access token and a refresh token for a given user credentials
 func generateToken(c *gin.Context) {
 	username := c.PostForm("username") // Get username from request form
 	password := c.PostForm("password") // Get password from request form
 
-	var user User // Variable to hold user data from database
+	var user User
+	result := DB.Where("username = ?", username).First(&user)
 
-	row := DB.QueryRow("SELECT id ,username,password FROM users WHERE username = ?", username) // Query one row by username
-	err := row.Scan(&user.ID, &user.Username, &user.Password)                                  // Scan each column value into user variable
-	if err != nil {
+	// Check for errors
+	if result.Error != nil {
+		if result.Error == gorm.ErrRecordNotFound {
+			c.JSON(404, gin.H{"error": "user not found"})
+		} else {
+			c.JSON(500, gin.H{"error": result.Error})
+		}
+		return
+	}
+
+	if bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password)) != nil {
 		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
 			"error": "invalid username or password",
 		})
 		return
 	}
 
-	if password != user.Password { // Check if password matches
-		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
-			"error": "invalid username or password",
-		})
-		return
-	}
-
-	tokenPair, err := createTokenPair(strconv.Itoa(user.ID)) // Create a token pair for user id
+	tokenPair, err := createTokenPair(strconv.Itoa(int(user.ID))) // Create a token pair for user id
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
 			"error": fmt.Sprintf("failed to create tokens: %v", err),
