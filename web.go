@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"gorm.io/driver/mysql"
 )
@@ -107,7 +108,11 @@ func main() {
 
 	// Create a Gin router with default middleware
 	router := gin.Default()
-
+	router.Use(cors.New(cors.Config{
+		AllowOrigins: []string{"*"},
+		AllowMethods: []string{"POST", "PUT", "PATCH", "DELETE"},
+		AllowHeaders: []string{"Content-Type,access-control-allow-origin, access-control-allow-headers"},
+	}))
 	apiRouter := router.Group("/api")
 
 	// Use AuthMiddleware for routes under /api prefix
@@ -166,25 +171,28 @@ func createUser(c *gin.Context) {
 
 // generateToken is a handler function that creates and returns an access token and a refresh token for a given user credentials
 func generateToken(c *gin.Context) {
-	username := c.PostForm("username") // Get username from request form
-	password := c.PostForm("password") // Get password from request form
+	var userFormData User
+	if err := c.ShouldBindJSON(&userFormData); err != nil {
+		c.JSON(400, gin.H{"error": err.Error()})
+		return
+	}
 
 	var user User
-	result := DB.Where("username = ?", username).First(&user)
+	result := DB.Where("username = ?", userFormData.Username).First(&user)
 
 	// Check for errors
 	if result.Error != nil {
 		if result.Error == gorm.ErrRecordNotFound {
-			c.JSON(404, gin.H{"error": "user not found"})
+			c.JSON(404, gin.H{"error": "invalid username"})
 		} else {
 			c.JSON(500, gin.H{"error": result.Error})
 		}
 		return
 	}
 
-	if bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password)) != nil {
+	if bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(userFormData.Password)) != nil {
 		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
-			"error": "invalid username or password",
+			"error": "invalid password",
 		})
 		return
 	}
