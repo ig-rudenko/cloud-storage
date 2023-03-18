@@ -126,6 +126,13 @@ func main() {
 	// Define a route for refreshing tokens
 	router.POST("/token/refresh", refreshToken)
 
+	apiRouter.GET("/items/*path", getFilesHandler)
+	apiRouter.POST("/items/upload/*path", postFilesHandler)
+	apiRouter.POST("/items/create-folder/*path", createFolderHandler)
+
+	apiRouter.POST("/item/rename/*path", renameFileHandler)
+	apiRouter.DELETE("/item/*path", deleteFileHandler)
+
 	// Define a route for testing authorization
 	apiRouter.GET("/me", func(c *gin.Context) {
 		// Get user id from Gin context
@@ -145,14 +152,14 @@ func createUser(c *gin.Context) {
 	// Bind the JSON data to a user struct
 	var user User
 	if err := c.ShouldBindJSON(&user); err != nil {
-		c.JSON(400, gin.H{"error": err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
 	// Hash the password using bcrypt (you need to import "golang.org/x/crypto/bcrypt")
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
 	if err != nil {
-		c.JSON(500, gin.H{"error": "failed to hash password"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to hash password"})
 		return
 	}
 
@@ -161,19 +168,19 @@ func createUser(c *gin.Context) {
 
 	// Save the user to the database
 	if result := DB.Create(&user); result.Error != nil {
-		c.JSON(500, gin.H{"error": result.Error})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": result.Error})
 		return
 	}
 
 	// Return the created user as JSON with status code 201
-	c.JSON(201, gin.H{"username": user.Username, "id": user.ID})
+	c.JSON(http.StatusCreated, gin.H{"username": user.Username, "id": user.ID})
 }
 
 // generateToken is a handler function that creates and returns an access token and a refresh token for a given user credentials
 func generateToken(c *gin.Context) {
 	var userFormData User
 	if err := c.ShouldBindJSON(&userFormData); err != nil {
-		c.JSON(400, gin.H{"error": err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
@@ -183,9 +190,9 @@ func generateToken(c *gin.Context) {
 	// Check for errors
 	if result.Error != nil {
 		if result.Error == gorm.ErrRecordNotFound {
-			c.JSON(404, gin.H{"error": "invalid username"})
+			c.JSON(http.StatusNotFound, gin.H{"error": "invalid username"})
 		} else {
-			c.JSON(500, gin.H{"error": result.Error})
+			c.JSON(http.StatusInternalServerError, gin.H{"error": result.Error})
 		}
 		return
 	}
