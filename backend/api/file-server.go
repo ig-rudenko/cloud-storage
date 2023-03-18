@@ -1,4 +1,4 @@
-package main
+package api
 
 import (
 	"fmt"
@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"web/backend/config"
 )
 
 // FileInfo is a struct that holds information about a file or folder
@@ -17,12 +18,13 @@ type FileInfo struct {
 	ModTime string `json:"modTime"`
 }
 
+// userPathHandler Обрабатывает путь указанный пользователем
 func userPathHandler(c *gin.Context) string {
 	// Получаем параметр path из URL
-	path := c.Param("path")
+	userPath := c.Param("path")
 
 	// Нельзя подниматься выше по директории
-	if strings.Contains(path, "..") {
+	if strings.Contains(userPath, "..") {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid path"})
 		return ""
 	}
@@ -33,18 +35,20 @@ func userPathHandler(c *gin.Context) string {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid user"})
 		return ""
 	}
-	if path == "" {
+
+	// корневая директория пользователя
+	validPath := fmt.Sprintf("%s/%s", config.StorageDir, userID)
+
+	if userPath != "" {
 		// Если path не задан, используем текущую директорию
-		path = fmt.Sprintf("storage/%s", userID)
-	} else {
 		// Иначе, используем заданную пользователем директорию
-		path = fmt.Sprintf("storage/%s%s", userID, path)
+		validPath += userPath
 	}
-	return path
+	return validPath
 }
 
-// Функция для получения списка файлов и папок в указанной директории
-func getFilesHandler(c *gin.Context) {
+// GetFilesHandler Функция для получения списка файлов и папок в указанной директории
+func GetFilesHandler(c *gin.Context) {
 	path := userPathHandler(c)
 	if path == "" {
 		return
@@ -85,7 +89,8 @@ func getFilesHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, fileInfos)
 }
 
-func downloadFile(c *gin.Context) {
+// DownloadFile Отправляем файл пользователю
+func DownloadFile(c *gin.Context) {
 	path := userPathHandler(c)
 	if path == "" {
 		return
@@ -99,8 +104,8 @@ func downloadFile(c *gin.Context) {
 	c.File(path)
 }
 
-// Функция для загрузки одного или нескольких файлов в указанную директорию
-func postFilesHandler(c *gin.Context) {
+// PostFilesHandler Функция для загрузки одного или нескольких файлов в указанную директорию
+func PostFilesHandler(c *gin.Context) {
 	path := userPathHandler(c)
 	if path == "" {
 		return
@@ -125,7 +130,8 @@ func postFilesHandler(c *gin.Context) {
 	c.JSON(http.StatusCreated, gin.H{"status": fmt.Sprintf("%d files uploaded to %s", len(files), path)})
 }
 
-func createFolderHandler(c *gin.Context) {
+// CreateFolderHandler Функция для создания новой папки
+func CreateFolderHandler(c *gin.Context) {
 	path := userPathHandler(c)
 	if path == "" {
 		return
@@ -140,8 +146,8 @@ func createFolderHandler(c *gin.Context) {
 	c.JSON(http.StatusCreated, gin.H{"status": fmt.Sprintf("Directory %s created", path)})
 }
 
-// Функция для перемещения или переименования одного или нескольких файлов или папок
-func renameFileHandler(c *gin.Context) {
+// RenameFileHandler Функция для перемещения или переименования одного или нескольких файлов или папок
+func RenameFileHandler(c *gin.Context) {
 	path := userPathHandler(c)
 	if path == "" {
 		return
@@ -162,8 +168,8 @@ func renameFileHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"status": fmt.Sprintf("%s renamed to %s", path, newName)})
 }
 
-// Функция для удаления одного или нескольких файлов или папок
-func deleteFileHandler(c *gin.Context) {
+// DeleteFileHandler Функция для удаления одного или нескольких файлов или папок
+func DeleteFileHandler(c *gin.Context) {
 	path := userPathHandler(c)
 	if path == "" {
 		return
