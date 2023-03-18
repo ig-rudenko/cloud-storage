@@ -34,8 +34,10 @@ func userPathHandler(c *gin.Context) string {
 		return ""
 	}
 	if path == "" {
-		path = fmt.Sprintf("storage/%s", userID) // Если path не задан, используем текущую директорию
+		// Если path не задан, используем текущую директорию
+		path = fmt.Sprintf("storage/%s", userID)
 	} else {
+		// Иначе, используем заданную пользователем директорию
 		path = fmt.Sprintf("storage/%s%s", userID, path)
 	}
 	return path
@@ -81,6 +83,20 @@ func getFilesHandler(c *gin.Context) {
 		fileInfos = append(fileInfos, fileInfo)
 	}
 	c.JSON(http.StatusOK, fileInfos)
+}
+
+func downloadFile(c *gin.Context) {
+	path := userPathHandler(c)
+	if path == "" {
+		return
+	}
+	// Проверьте правильность пути и существование файла
+	fileName := filepath.Base(path)
+	c.Header("Content-Description", "File Transfer")
+	c.Header("Content-Transfer-Encoding", "binary")
+	c.Header("Content-Disposition", "attachment; filename="+fileName)
+	c.Header("Content-Type", "application/octet-stream")
+	c.File(path)
 }
 
 // Функция для загрузки одного или нескольких файлов в указанную директорию
@@ -137,7 +153,8 @@ func renameFileHandler(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Missing newName parameter"})
 		return
 	}
-	err := os.Rename(path, newName)
+
+	err := os.Rename(path, filepath.Dir(path)+"/"+newName)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

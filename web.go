@@ -126,10 +126,13 @@ func main() {
 	// Define a route for refreshing tokens
 	router.POST("/token/refresh", refreshToken)
 
+	// Работа с файлами
 	apiRouter.GET("/items/*path", getFilesHandler)
 	apiRouter.POST("/items/upload/*path", postFilesHandler)
 	apiRouter.POST("/items/create-folder/*path", createFolderHandler)
 
+	// Работа с одним файлом
+	apiRouter.GET("/item/*path", downloadFile)
 	apiRouter.POST("/item/rename/*path", renameFileHandler)
 	apiRouter.DELETE("/item/*path", deleteFileHandler)
 
