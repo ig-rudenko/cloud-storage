@@ -1,4 +1,5 @@
 <template>
+  <Logo/>
   <div class="login">
     <h1>Пожалуйста, войдите</h1>
     <form @submit.prevent="handleLogin">
@@ -19,7 +20,10 @@
 
 <script>
 
+import Logo from "@/components/icons/Logo.vue";
+
 export default {
+  components: {Logo},
   data() {
     return {
       user: {  // #
@@ -61,10 +65,10 @@ export default {
 };
 </script>
 
-<style scoped>
+<style>
 
 .login {
-  width: 400px;
+  width: 330px;
   margin: auto;
   font-family: Arial, sans-serif;
 }
@@ -88,14 +92,17 @@ input {
 }
 
 button {
+  font-size: 16px;
   width: 100%;
-  padding: 10px;
+  padding: 12px;
   border-radius: 5px;
+  border: none;
 }
 
 button:hover{
-  background-color:#00a0ff;
-  color:white;
-  cursor:pointer;
+  background-color: #333333;
+  color: white;
+  border: none;
+  cursor: pointer;
 }
 </style>

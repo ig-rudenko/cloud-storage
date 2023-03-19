@@ -1,4 +1,5 @@
 <template>
+  <Logo/>
   <div class="register">
     <h1>Регистрация</h1>
     <form @submit.prevent="handleRegister">
@@ -19,7 +20,10 @@
 
 <script>
 
+import Logo from "@/components/icons/Logo.vue";
+
 export default {
+  components: {Logo},
   data() {
     return {
       user: {  // #
@@ -67,7 +71,7 @@ export default {
 <style scoped>
 
 .register {
-  width: 400px;
+  width: 330px;
   margin: auto;
   font-family: Arial, sans-serif;
 }
@@ -92,13 +96,16 @@ input {
 
 button {
   width: 100%;
-  padding: 10px;
+  font-size: 16px;
+  padding: 12px;
   border-radius: 5px;
+  border: none;
 }
 
 button:hover{
-  background-color:#00a0ff;
-  color:white;
-  cursor:pointer;
+  background-color: #333333;
+  color: white;
+  border: none;
+  cursor: pointer;
 }
 </style>
