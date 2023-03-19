@@ -3,23 +3,30 @@
   <div class="container" @click="$refs.menu.close()">
     <div class="breadcrumbs" style="cursor:pointer;">
       <span @click="selectFolder(null)">Главная</span>
-      <span v-for="(folder, index) in folderPath" :key="folder.id">
-        / <span @click="selectFolder(folder)">{{ folder.name }}</span>
+      <span v-for="(folder, index) in folderPath">
+        / <span @click="selectFolder(folderPath.slice(0, index+1))">{{ folder }}</span>
       </span>
     </div>
+
+    <Progress :progress="uploadProgress" :loading="uploading">
+      <p>Загрузка...</p>
+    </Progress>
+    <Progress :progress="downloadProgress" :loading="downloading">
+      <p>Скачиваем файл...</p>
+    </Progress>
 
     <div class="tiles">
       <div
           class="tile"
           v-for="(item, index) in items"
           :key="item.id"
-          :class="{ folder: item.type === 'folder', file: item.type === 'file' }"
+          :class="{ folder: item.isDir, file: !item.isDir }"
           @click="openItem(item)"
           @contextmenu.prevent.stop="showMenu($event, item)"
       >
 
 <!--        FOLDER-->
-        <div v-if="item.type === 'folder'">
+        <div v-if="item.isDir">
           <svg style="vertical-align: middle" xmlns="http://www.w3.org/2000/svg" width="80" height="80" fill="currentColor" viewBox="0 0 16 16">
             <path d="M9.828 3h3.982a2 2 0 0 1 1.992 2.181l-.637 7A2 2 0 0 1 13.174 14H2.825a2 2 0 0 1-1.991-1.819l-.637-7a1.99 1.99 0 0 1 .342-1.31L.5 3a2 2 0 0 1 2-2h3.672a2 2 0 0 1 1.414.586l.828.828A2 2 0 0 0 9.828 3zm-8.322.12C1.72 3.042 1.95 3 2.19 3h5.396l-.707-.707A1 1 0 0 0 6.172 2H2.5a1 1 0 0 0-1 .981l.006.139z"/>
           </svg>
@@ -32,8 +39,8 @@
           </svg>
         </div>
 
-        <div>
-          {{ shortFileName(item.name) }}
+        <div style="overflow-wrap: break-word;">
+          {{ item.name }}
         </div>
       </div>
 
@@ -47,75 +54,50 @@
     </div>
 
     <context-menu :display="showContextMenu" ref="menu">
-        <p>Переименовать</p>
-        <p>Удалить</p>
+        <p @click="downloadFile">Скачать</p>
+        <p @click="renameFile">Переименовать</p>
+        <p @click="deleteItem">Удалить</p>
     </context-menu>
-    <input type="file" ref="fileInput" hidden @change="uploadFile" />
   </div>
 </template>
 
 <script>
 
 import ContextMenu from "@/components/ContextMenu.vue";
+import Progress from "@/components/Progress.vue";
+import api from "@/services/api";
 
 export default {
-  components: {ContextMenu},
+
+  components: {
+    ContextMenu,
+    Progress
+  },
+
   data() {
     return {
-      folders: [
-        { id: 1, name: "Документы", parentId: null, type: "folder"},
-        { id: 2, name: "Фотографии", parentId: null, type: "folder" },
-        { id: 3, name: "Видео", parentId: null, type: "folder" },
-        { id: 4, name: "Сканы", parentId: 1, type: "folder" },
-      ],
-      files: [
-        { id: 5,
-          name: "Резюме.docx",
-          size: "25 KB",
-          date: "18.03.2023",
-          folderId: 1,
-          type: "file"
-        },
-        { id: 6,
-          name: "Отчет.pdf",
-          size: "150 KB",
-          date: "17.03.2023",
-          folderId: 1,
-          type: "file"
-        },
-        { id: 7,
-          name: "Презентация.pptx",
-          size: "300 KB",
-          date: "16.03.2023",
-          folderId: 1,
-          type: "file"
-        },
-        { id: 8,
-          name: "Паспорт.jpg",
-          size: "50 KB",
-          date: "15.03.2023",
-          folderId: 4,
-          type: "file"
-        }
-        ],
-      selectedFolder: null,
       items: [],
       folderPath: [],
       showContextMenu: false,
       selectedFile: null,
-
+      uploadProgress: null,
+      uploading: false,
+      downloadProgress: null,
+      downloading: false
     };
   },
-  mounted() {
-    if (!this.currentUser) {  // #
+
+  async mounted() {
+    if (!this.currentUser) {
       this.$router.push('/login');
     }
 
-    this.selectFolder(null);
+    await this.updateFolder();
     this.addDragAndDropListeners();
+    setTimeout(this.updateFolder, 5000)
   },
 
-  computed: {  // #
+  computed: {
     currentUser() {
       return this.$store.state.auth.user;
     }
@@ -123,105 +105,141 @@ export default {
 
   methods: {
 
-    shortFileName(file_name) {
-      if (file_name.length > 12) {
-        return file_name.slice(0, 5) + "..." + file_name.slice(-6)
-      }
-      return file_name
-    },
-
     showMenu(event, file) {
       this.selectedFile = file;
       this.$refs.menu.open(event);
     },
 
-    selectFolder(folder) {
-      this.selectedFolder = folder;
-      console.log("folder", folder)
-      // Здесь можно сделать запрос к серверу для получения папок и файлов в выбранной папке
-      // Для простоты я использую фиктивные данные
-      this.items = [
-        ...this.folders.filter((f) => f.parentId === (folder ? folder.id : null)),
-        ...this.files.filter((f) => f.folderId === (folder ? folder.id : null)),
-      ];
-      console.log(this.items)
-      this.folderPath = [];
-      let currentFolder = folder;
-      while (currentFolder) {
-        this.folderPath.unshift(currentFolder);
-        currentFolder = this.folders.find((f) => f.id === currentFolder.parentId);
+    async selectFolder(folder_path) {
+      if (folder_path === null) {
+        folder_path = []
       }
+      this.folderPath = folder_path
+      console.log("this.folderPath", this.folderPath)
+      let path = "api/items/" + this.folderPath.join("/")
+      console.log(path)
+      let resp = await api.get(path)
+      this.items = resp.data
     },
+
+    async updateFolder() {
+      await this.selectFolder(this.folderPath)
+    },
+
     openItem(item) {
-      console.log(item)
-      if (item.type === "folder") {
-        this.selectFolder(item);
-      } else if (item.type === "file") {
-        // Здесь можно сделать запрос к серверу для скачивания или открытия файла
-        // Для простоты я просто вывожу сообщение в консоль
-        console.log("Открытие файла:", item.name);
+      if (item.isDir) {
+        this.selectFolder([...this.folderPath, item.name]);
       }
     },
-    createFolder(){
+
+    async downloadFile () {
+      // Если это файл и скачивание другого файла не происходит
+      if (!this.selectedFile.isDir && !this.downloading) {
+        // определяем url для скачивания файла
+        const url = "/api/item/" + [...this.folderPath, this.selectedFile.name].join("/");
+
+        this.downloading = true
+        // делаем запрос к серверу с типом ответа 'blob'
+        api.get(
+            url, {
+              responseType: "blob",
+              onDownloadProgress: (progressEvent) => { //
+                // функция для обновления прогресса загрузки
+                this.downloadProgress = Math.round( (progressEvent.loaded * 100) / progressEvent.total ); // вычисляем и сохраняем прогресс в процентах
+              }
+            }
+        )
+          .then(response => {
+            // получаем blob из ответа
+            const blob = response.data;
+            // создаем ссылку на файл из blob
+            const fileURL = URL.createObjectURL(blob);
+            // создаем элемент <a> с атрибутом href равным ссылке на файл
+            const link = document.createElement("a");
+            link.href = fileURL;
+            // задаем имя файла для загрузки (можно получить из ответа сервера)
+            link.download = this.selectedFile.name;
+            // добавляем элемент <a> в документ
+            document.body.appendChild(link);
+            // имитируем клик по элементу <a>
+            link.click();
+            // удаляем элемент <a> из документа
+            document.body.removeChild(link);
+            this.downloading = false
+          })
+          .catch(error => {
+            // обрабатываем ошибку запроса или загрузки файла
+            console.error(error.message);
+            this.downloading = false
+          });
+      }
+    },
+
+    async deleteItem() {
+      await api.delete("/api/item/" + this.folderPath.join("/") + "/" + this.selectedFile.name)
+      await this.updateFolder()
+    },
+
+    async renameFile() {
+      let newName = prompt("Введите название папки", this.selectedFile.name)
+      const url = "/api/item/rename/" + [...this.folderPath, this.selectedFile.name].join("/")
+      await api.post(url, {"newName": newName})
+      await this.updateFolder()
+    },
+
+    async createFolder(){
       let name = prompt("Введите название папки");
         if(name){
           // Здесь можно сделать запрос к серверу для создания новой папки в выбранной папке
           // Для простоты я просто вывожу сообщение в консоль и добавляю папку в список
 
           console.log("Создание папки:", name);
-          let newFolder = {
-            id: this.folders.length + 1,
-            name: name,
-            parentId: this.selectedFolder ? this.selectedFolder.id : null,
-            type: "folder"
-          };
-          this.folders.push(newFolder);
-          this.items.push(newFolder);
+          let url = "api/items/create-folder/" + [...this.folderPath, name].join("/")
+          let res = await api.post(url)
+          await this.updateFolder()
         }
       },
-    uploadFile() {
-      let file = this.$refs.fileInput.files[0];
-      if (file) {
-        // Здесь можно сделать запрос к серверу для загрузки файла в выбранную папку
-        // Для простоты я просто вывожу сообщение в консоль и добавляю файл в список
 
-        console.log("Загрузка файла:", file.name);
-        let newFile = {
-          id: this.files.length + 1,
-          name: file.name,
-          size: file.size,
-          date: new Date().toLocaleDateString(),
-          folderId: this.selectedFolder ? this.selectedFolder.id : null,
-        };
-        this.files.push(newFile);
-        this.items.push(newFile);
-        this.$refs.fileInput.value = "";
+    async uploadFiles (e) {
+      // Если уже загружаем файл
+      if (this.uploading) return;
+
+      e.preventDefault();
+      let files = e.dataTransfer.files;
+      if (!files) return;
+
+      const formData = new FormData();
+      for (let file of files) {
+        formData.append("files", file);
       }
-      },
-      addDragAndDropListeners() {
-        let container = document.querySelector(".container");
-        container.addEventListener("dragover", e => e.preventDefault());
-        container.addEventListener("drop", e => {
-          e.preventDefault();
-          let file = e.dataTransfer.files[0];
-          if(file){
-            // Здесь можно сделать запрос к серверу для загрузки файла в выбранную папку
-            // Для простоты я просто вывожу сообщение в консоль и добавляю файл в список
+      let url = "/api/items/upload/" + this.folderPath.join('/')
 
-            console.log("Загрузка файла:", file.name);
-            let newFile = {
-              id: this.files.length + 1,
-              name: file.name,
-              size: file.size,
-              date: new Date().toLocaleDateString(),
-              folderId: this.selectedFolder ? this.selectedFolder.id : null,
-            };
-            this.files.push(newFile);
-            this.items.push(newFile);}
-        }
-        );
+      this.uploading = true
+      let resp = await api.post(
+          url,
+          formData,
+          {
+            headers: {
+              "Content-Type": "multipart/form-data",
+            },
+            onUploadProgress: (progressEvent) => { //
+              // функция для обновления прогресса загрузки
+              this.uploadProgress = Math.round( (progressEvent.loaded * 100) / progressEvent.total ); // вычисляем и сохраняем прогресс в процентах
+            }
+          }
+      )
+      this.uploading = false
+      console.log(resp)
+      await this.updateFolder()
+    },
+
+    addDragAndDropListeners() {
+      let container = document.querySelector("body");
+      container.addEventListener("dragover", e => e.preventDefault());
+      container.addEventListener("drop", (e) => this.uploadFiles(e));
     }
   }
+
 };
 </script>
 
@@ -248,8 +266,8 @@ export default {
 
 .tile{
   /*max-width: 100%;*/
-  /*width: 100px;*/
-  padding: 20px;
+  width: 140px;
+  /*padding: 10px;*/
   /*height: 100px;*/
   margin: 10px;
   border-radius: 10px;

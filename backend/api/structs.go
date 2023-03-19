@@ -12,3 +12,7 @@ type User struct {
 	Username string `json:"username" gorm:"unique"`
 	Password string `json:"password"`
 }
+
+type NewFileName struct {
+	Name string `json:"newName"`
+}

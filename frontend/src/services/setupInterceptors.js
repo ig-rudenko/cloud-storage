@@ -38,6 +38,7 @@ const setup = (store) => {
 
                         return axiosInstance(originalConfig);
                     } catch (_error) {
+                        localStorage.removeItem("user")
                         return Promise.reject(_error);
                     }
                 }

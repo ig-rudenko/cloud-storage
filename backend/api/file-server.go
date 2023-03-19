@@ -153,14 +153,14 @@ func RenameFileHandler(c *gin.Context) {
 		return
 	}
 
-	// Проверьте правильность пути и существование файла или директории
-	newName := c.PostForm("newName")
-	if newName == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Missing newName parameter"})
+	var newName NewFileName
+
+	if err := c.ShouldBindJSON(&newName); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	err := os.Rename(path, filepath.Dir(path)+"/"+newName)
+	err := os.Rename(path, filepath.Dir(path)+"/"+newName.Name)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
