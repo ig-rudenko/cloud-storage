@@ -1,9 +1,11 @@
 package api
 
 import (
+	"errors"
 	"fmt"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
+	"github.com/go-sql-driver/mysql"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 	"net/http"
@@ -12,6 +14,17 @@ import (
 	"time"
 	"web/backend/config"
 )
+
+// handleDBEntryError Обрабатываем ошибку базы данных. Определяем текст пользователю и статус ответа
+func handleDBEntryError(err error) (string, int) {
+	var mysqlErr *mysql.MySQLError           // define a variable of type *mysql.MySQLError
+	if ok := errors.As(err, &mysqlErr); ok { // check if err can be assigned to mysqlErr variable (type assertion)
+		if mysqlErr.Number == 1062 { // error number for duplicate entry https://dev.mysql.com/doc/refman/8.0/en/server-error-reference.html#error_er_dup_entry
+			return "A user already exists with the same username", http.StatusBadRequest // return from the function or do something else
+		}
+	}
+	return err.Error(), http.StatusInternalServerError // otherwise print the original error
+}
 
 // CreateUser Регистрация нового пользователя
 func CreateUser(c *gin.Context) {
@@ -33,8 +46,9 @@ func CreateUser(c *gin.Context) {
 	user.Password = string(hashedPassword)
 
 	// Save the user to the database
-	if result := config.DB.Create(&user); result.Error != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": result.Error})
+	if err := config.DB.Create(&user).Error; err != nil {
+		errorText, statusCode := handleDBEntryError(err) // Обрабатываем ошибку создания нового пользователя
+		c.JSON(statusCode, gin.H{"error": errorText})
 		return
 	}
 

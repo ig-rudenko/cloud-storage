@@ -2,8 +2,8 @@ package api
 
 // TokenPair is a struct that holds an access token and a refresh token
 type TokenPair struct {
-	AccessToken  string `json:"access_token"`
-	RefreshToken string `json:"refresh_token"`
+	AccessToken  string `json:"accessToken"`
+	RefreshToken string `json:"refreshToken"`
 }
 
 // User is a struct that represents a user record in the database
