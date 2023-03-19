@@ -104,9 +104,14 @@ func GenerateToken(c *gin.Context) {
 
 // RefreshToken is a handler function that refreshes and returns an access token for a given refresh token
 func RefreshToken(c *gin.Context) {
-	tokenString := c.PostForm("refresh_token") // Get refresh token from request form
 
-	token, err := jwt.Parse(tokenString, func(t *jwt.Token) (interface{}, error) { // Parse and validate refresh token using secret key
+	var t TokenPair
+	if err := c.ShouldBindJSON(&t); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	token, err := jwt.Parse(t.RefreshToken, func(t *jwt.Token) (interface{}, error) { // Parse and validate refresh token using secret key
 		if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok { // Check if signing method is HMAC
 			return nil, fmt.Errorf("unexpected signing method: %v", t.Header["alg"])
 		}
@@ -140,7 +145,7 @@ func RefreshToken(c *gin.Context) {
 		}
 
 		c.JSON(http.StatusOK, gin.H{ // Return new access token as JSON with 200 status code
-			"access_token": newAccessToken,
+			"accessToken": newAccessToken,
 		})
 
 	} else {

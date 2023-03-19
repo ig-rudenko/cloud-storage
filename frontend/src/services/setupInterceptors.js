@@ -22,16 +22,15 @@ const setup = (store) => {
         async (err) => {
             const originalConfig = err.config;
 
-            if (originalConfig.url !== "/auth/signin" && err.response) {
+            if ((originalConfig.url !== "/login" || originalConfig.url !== "/register") && err.response) {
                 // Access Token was expired
                 if (err.response.status === 401 && !originalConfig._retry) {
                     originalConfig._retry = true;
 
                     try {
-                        const rs = await axiosInstance.post("/auth/refreshtoken", {
+                        const rs = await axiosInstance.post("/token/refresh", {
                             refreshToken: TokenService.getLocalRefreshToken(),
                         });
-
                         const { accessToken } = rs.data;
 
                         store.dispatch('auth/refreshToken', accessToken);
