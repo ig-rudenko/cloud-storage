@@ -57,31 +57,6 @@ export default {
       );
     },
 
-    submitForm() {
-      // send the username and password to the server
-      fetch("http://127.0.0.1:8080/token", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          username: this.username,
-          password: this.password,
-        }),
-      })
-          .then((response) => response.json())
-          .then((data) => {
-            // handle the response
-            console.log(data);
-            // save the JWT tokens in the storage
-            localStorage.setItem("access_token", data.access_token);
-            localStorage.setItem("refresh_token", data.refresh_token);
-          })
-          .catch((error) => {
-            // handle the error
-            console.error(error);
-          });
-    },
   },
 };
 </script>

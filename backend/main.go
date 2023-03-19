@@ -35,15 +35,16 @@ func main() {
 		AllowHeaders: []string{"Content-Type,access-control-allow-origin, access-control-allow-headers"},
 	}))
 	apiRouter := router.Group("/api")
+	authRouter := router.Group("/api/auth")
 
 	// Use AuthMiddleware for routes under /api prefix
 	apiRouter.Use(AuthMiddleware(config.SecretKey))
 
 	// Define a route for generating tokens
-	router.POST("/token", api.GenerateToken)
+	authRouter.POST("/token", api.GenerateToken)
 	// Define a route for refreshing tokens
-	router.POST("/token/refresh", api.RefreshToken)
-	router.POST("/register", api.CreateUser)
+	authRouter.POST("/token/refresh", api.RefreshToken)
+	authRouter.POST("/register", api.CreateUser)
 
 	// Работа с файлами
 	apiRouter.GET("/items/*path", api.GetFilesHandler)

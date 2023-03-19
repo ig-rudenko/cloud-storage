@@ -60,32 +60,6 @@ export default {
       );
     },
 
-    submitForm() {
-      // send the username and password to the server
-      fetch(
-          "http://127.0.0.1:8080/register", {
-        method: "POST",
-        mode: "cors",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          username: this.username,
-          password: this.password,
-        }),
-      })
-          .then((response) => response.json())
-          .then((data) => {
-            // handle the response
-            console.log(data);
-            // redirect to login page using vue-router
-            this.$router.push("/login");
-          })
-          .catch((error) => {
-            // handle the error
-            console.error(error);
-          });
-    },
   },
 };
 </script>

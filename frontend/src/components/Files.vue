@@ -116,7 +116,7 @@ export default {
       }
       this.folderPath = folder_path
       console.log("this.folderPath", this.folderPath)
-      let path = "api/items/" + this.folderPath.join("/")
+      let path = "/items/" + this.folderPath.join("/")
       console.log(path)
       let resp = await api.get(path)
       this.items = resp.data
@@ -136,7 +136,7 @@ export default {
       // Если это файл и скачивание другого файла не происходит
       if (!this.selectedFile.isDir && !this.downloading) {
         // определяем url для скачивания файла
-        const url = "/api/item/" + [...this.folderPath, this.selectedFile.name].join("/");
+        const url = "/item/" + [...this.folderPath, this.selectedFile.name].join("/");
 
         this.downloading = true
         // делаем запрос к серверу с типом ответа 'blob'
@@ -176,13 +176,13 @@ export default {
     },
 
     async deleteItem() {
-      await api.delete("/api/item/" + this.folderPath.join("/") + "/" + this.selectedFile.name)
+      await api.delete("/item/" + this.folderPath.join("/") + "/" + this.selectedFile.name)
       await this.updateFolder()
     },
 
     async renameFile() {
       let newName = prompt("Введите название папки", this.selectedFile.name)
-      const url = "/api/item/rename/" + [...this.folderPath, this.selectedFile.name].join("/")
+      const url = "/item/rename/" + [...this.folderPath, this.selectedFile.name].join("/")
       await api.post(url, {"newName": newName})
       await this.updateFolder()
     },
@@ -194,7 +194,7 @@ export default {
           // Для простоты я просто вывожу сообщение в консоль и добавляю папку в список
 
           console.log("Создание папки:", name);
-          let url = "api/items/create-folder/" + [...this.folderPath, name].join("/")
+          let url = "/items/create-folder/" + [...this.folderPath, name].join("/")
           let res = await api.post(url)
           await this.updateFolder()
         }
@@ -212,7 +212,7 @@ export default {
       for (let file of files) {
         formData.append("files", file);
       }
-      let url = "/api/items/upload/" + this.folderPath.join('/')
+      let url = "/items/upload/" + this.folderPath.join('/')
 
       this.uploading = true
       let resp = await api.post(
