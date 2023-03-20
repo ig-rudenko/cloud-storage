@@ -57,6 +57,11 @@
         <p @click="downloadFile">Скачать</p>
         <p @click="renameFile">Переименовать</p>
         <p @click="deleteItem">Удалить</p>
+
+        <p style="border-top: 1px solid; margin: 5px 0;"></p>
+
+        <p v-if="!selectedFile.isDir">{{formatBytes(selectedFile.size)}}</p>
+        <p>{{selectedFile.modTime}}</p>
     </context-menu>
   </div>
 </template>
@@ -104,6 +109,20 @@ export default {
   },
 
   methods: {
+
+    formatBytes(bytes) {
+      let marker = 1024; // Измените на 1000 при необходимости
+      let decimal = 1;
+      let kiloBytes = marker; // Один килобайт - это 1024 байта
+      let megaBytes = marker * marker; // Один мегабайт - это 1024 килобайта
+      let gigaBytes = marker * marker * marker; // Один гигабайт - это 1024 мегабайта
+      let teraBytes = marker * marker * marker * marker; // Один терабайт - это 1024 гигабайта
+
+      if (bytes < kiloBytes) return bytes + " Б";
+      else if (bytes < megaBytes) return (bytes / kiloBytes).toFixed(decimal) + " КБ";
+      else if (bytes < gigaBytes) return (bytes / megaBytes).toFixed(decimal) + " МБ";
+      else if (bytes < teraBytes) return (bytes / gigaBytes).toFixed(decimal) + " ГБ";
+    },
 
     showMenu(event, file) {
       this.selectedFile = file;

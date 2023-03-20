@@ -82,7 +82,7 @@ func GetFilesHandler(c *gin.Context) {
 			Name:    file.Name(),
 			Size:    file.Size(),
 			IsDir:   file.IsDir(),
-			ModTime: file.ModTime().Format("15:04:05 01-02-2006"),
+			ModTime: file.ModTime().Format("15:04 / 01.02.2006"),
 		}
 		fileInfos = append(fileInfos, fileInfo)
 	}
