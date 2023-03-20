@@ -25,13 +25,16 @@
 <img src="https://www.vectorlogo.zone/logos/docker/docker-tile.svg" alt="vue.js" width="40" height="40"/>
 
 <img src="https://www.vectorlogo.zone/logos/nginx/nginx-icon.svg" alt="vue.js" width="40" height="40"/>
+
+<img src="https://www.vectorlogo.zone/logos/mysql/mysql-official.svg" alt="mysql" width="40" height="40"/>
 </div>
 
 ---
 
 Облачное файловое хранилище с поддержкой drag&drop
 
-* Backend - Go
 * Frontend - Vue.js
+* Backend - Go
+* Database - MySQL
 
 ![img.png](img/img.png)
