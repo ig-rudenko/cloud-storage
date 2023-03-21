@@ -1,6 +1,6 @@
 <template>
   <div class="logo">
-    <img src="../../assets/logo.png" alt="logo">
+    <img src="../../assets/logo-3.png" alt="logo">
   </div>
 </template>
 
@@ -8,7 +8,18 @@
 .logo {
   display: flex;
   justify-content: center;
-  height: 200px;
+  height: 350px;
   margin-bottom: 20px;
+  animation: spin 60s infinite linear;
+}
+
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 </style>

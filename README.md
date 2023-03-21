@@ -1,9 +1,10 @@
-# Cloud Storage
+<h1 align="center">Black Hole Cloud Storage</h1>
+
+<p align="center">
+<img alt="img_1.png" src="img/img_1.png"/>
+</p>
 
 ---
-
-## Black-hole
-
 
 ### Используемые языки и фреймворки:
 
