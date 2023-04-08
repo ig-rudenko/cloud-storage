@@ -1,4 +1,4 @@
-version: "3.8"
+version: "3.9"
 
 services:
 
@@ -16,19 +16,29 @@ services:
   backend:
     build: .
     image: black-hole-backend:v0.1
-    container_name: backend
     environment:
       DB_HOST: mysql
       DB_PORT: 3306
       DB_USER: user
       DB_PASS: password
       DB_NAME: black_hole
-    ports:
-      - "8080:8080"
+
+    restart: on-failure
+    deploy:
+      replicas: 2
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: "100M"
+        reservations:
+          memory: "50M"
+          cpus: "0.3"
+
     volumes:
       - "./backend/storage:/app/storage"
     depends_on:
-      - mysql
+      mysql:
+        condition: service_healthy
 
   mysql:
     image: mysql
@@ -37,6 +47,13 @@ services:
       MYSQL_USER: user
       MYSQL_PASSWORD: password
       MYSQL_DATABASE: black_hole
+
     restart: always
     volumes:
       - ./mysql_data:/var/lib/mysql
+    healthcheck:
+      test: "mysqladmin ping -h 127.0.0.1 -u $$MYSQL_USER --password=$$MYSQL_PASSWORD"
+      start_period: 5s
+      interval: 5s
+      timeout: 5s
+      retries: 10

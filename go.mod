@@ -9,9 +9,6 @@ require (
 	golang.org/x/crypto v0.5.0
 	gorm.io/driver/mysql v1.4.7
 	gorm.io/gorm v1.24.6
-)
-
-require (
 	github.com/bytedance/sonic v1.8.0 // indirect
 	github.com/chenzhuoyu/base64x v0.0.0-20221115062448-fe3a3abad311 // indirect
 	github.com/gin-contrib/sse v0.1.0 // indirect
