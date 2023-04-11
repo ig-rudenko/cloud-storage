@@ -54,3 +54,12 @@ or
 docker build -t cloud-storage .
 ```
 where cloud-storage is name of container. Execute by root directory
+
+If you wanna use MySQL on Host you must use `host.docker.internal` as `localhost`, then in `backend/config/config.go` replace `DSN` with:
+```golang
+// DSN Get database connection settings from environment variables
+var DSN = fmt.Sprintf("%s:%s@tcp(host.docker.internal:3306)/%s?charset=utf8mb4&parseTime=True&loc=Local",
+	getEnv("DB_USER", "root"),
+	getEnv("DB_PASS", "root"),
+	getEnv("DB_NAME", "black_hole"))
+```
