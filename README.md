@@ -39,3 +39,18 @@
 * Database - MySQL
 
 ![img.png](img/img.png)
+
+### How to use:
+### Windows 10 and Docker Desktop:
+PowerShell
+```powershell
+docker build --file .\cloud-storage\Dockerfile .\cloud-storage\
+```
+where path .\cloud-storage is directory with all elements of system, root.
+
+or
+
+```powershell
+docker build -t cloud-storage .
+```
+where cloud-storage is name of container. Execute by root directory
