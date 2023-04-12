@@ -290,6 +290,7 @@ export default {
   justify-content:center;
   text-align:center;
   cursor:pointer;
+  user-select: none;
 }
 
 .folder{
