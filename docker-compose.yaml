@@ -35,7 +35,7 @@ services:
           cpus: "0.3"
 
     volumes:
-      - "./backend/storage:/app/storage"
+      - "./storage:/app/storage"
     depends_on:
       mysql:
         condition: service_healthy

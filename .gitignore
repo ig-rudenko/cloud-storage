@@ -9,6 +9,7 @@
 *.so
 *.dylib
 
+.run
 .idea
 storage
 mysql_data
