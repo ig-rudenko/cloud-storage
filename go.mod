@@ -3,11 +3,11 @@ module web
 go 1.19
 
 require (
-	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/gin-contrib/cors v1.4.0
 	github.com/gin-gonic/gin v1.9.0
 	github.com/go-ozzo/ozzo-validation/v4 v4.3.0
 	github.com/go-sql-driver/mysql v1.7.0
+	github.com/golang-jwt/jwt/v5 v5.0.0-rc.2
 	github.com/stretchr/testify v1.8.1
 	golang.org/x/crypto v0.5.0
 	gorm.io/driver/mysql v1.4.7
