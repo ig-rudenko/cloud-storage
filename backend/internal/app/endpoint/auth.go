@@ -17,6 +17,12 @@ func (e *Endpoint) RegisterNewUser(c *gin.Context) {
 		return
 	}
 
+	// Проверяем данные пользователя
+	if err := user.Validate(); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
 	// Создаем пользователя, а также инициализируем новое пользовательское хранилище
 	if err := e.service.InitUser(&user); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -45,7 +51,7 @@ func (e *Endpoint) GenerateToken(c *gin.Context) {
 		return
 	}
 
-	if user.ComparePasswords(user.Password, userFormData.Password) == false {
+	if user.ComparePassword(userFormData.Password) == false {
 		c.JSON(http.StatusUnauthorized, gin.H{
 			"error": "invalid password",
 		})

@@ -60,8 +60,11 @@
 
         <p style="border-top: 1px solid; margin: 5px 0;"></p>
 
-        <p v-if="!selectedFile.isDir">{{formatBytes(selectedFile.size)}}</p>
-        <p>{{selectedFile.modTime}}</p>
+        <div v-if="selectedFile">
+            <p v-if="!selectedFile.isDir">{{formatBytes(selectedFile.size)}}</p>
+            <p>{{selectedFile.modTime}}</p>
+        </div>
+
     </context-menu>
   </div>
 </template>

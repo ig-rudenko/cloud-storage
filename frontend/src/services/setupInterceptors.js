@@ -30,9 +30,19 @@ const setup = (store) => {
                     try {
                         const refreshToken = TokenService.getLocalRefreshToken()
                         if (!refreshToken) return;
-                        const rs = await axiosInstance.post("auth/token/refresh", {
-                            refreshToken: refreshToken,
-                        });
+                        const rs = await axiosInstance.post(
+                            "auth/token/refresh",
+                            { refreshToken: refreshToken },
+                            originalConfig
+                        );
+
+                        console.log("STATUS!", rs.status)
+
+                        if (rs.status !== 200) {
+                            store.dispatch("auth/logout")
+                            return
+                        }
+
                         const { accessToken } = rs.data;
 
                         store.dispatch('auth/refreshToken', accessToken);
