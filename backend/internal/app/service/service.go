@@ -1,6 +1,7 @@
 package service
 
 import (
+	"io"
 	"mime/multipart"
 	"web/backend/internal/app/model"
 )
@@ -15,6 +16,7 @@ type Storage interface {
 	ValidateUserStoragePath(user *model.User, path string) (validPath string, err error)
 	ListUserFiles(path string) ([]model.FileInfo, error)
 	SaveFile(file *multipart.FileHeader, path string) error
+	DownloadFile(string) (io.Reader, error)
 }
 
 type Service struct {

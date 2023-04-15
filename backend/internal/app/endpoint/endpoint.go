@@ -2,6 +2,7 @@ package endpoint
 
 import (
 	"github.com/gin-gonic/gin"
+	"io"
 	"mime/multipart"
 	"net/http"
 	"strconv"
@@ -14,6 +15,7 @@ type Service interface {
 	ValidatePath(user *model.User, path string) (string, error)
 	GetUserFiles(userPath string) ([]model.FileInfo, error)
 	UploadFiles(files []*multipart.FileHeader, path string) []error
+	DownloadFile(string) (io.Reader, error)
 }
 
 type TokenCreator interface {

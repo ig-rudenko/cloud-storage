@@ -3,8 +3,8 @@ package endpoint
 import (
 	"fmt"
 	"github.com/gin-gonic/gin"
+	"io"
 	"net/http"
-	"path/filepath"
 	"strings"
 )
 
@@ -70,24 +70,11 @@ func (e *Endpoint) UploadFilesHandler(c *gin.Context) {
 	// Сохраняем файлы файлы
 	errors := e.service.UploadFiles(files, userPath)
 
-	if len(errors) > 1 {
-		// Если ошибок больше одной, то отправляем слайс текстов ошибок
-		c.JSON(
-			http.StatusInternalServerError,
-			gin.H{
-				"error": func() []string {
-					var e []string
-					for _, err := range errors {
-						e = append(e, err.Error())
-					}
-					return e
-				}(),
-			},
-		)
-		return
-	} else if len(errors) == 1 {
-		// Если ошибка одна, то отправляем её текст
-		c.JSON(http.StatusInternalServerError, gin.H{"error": errors[0].Error()})
+	if len(errors) > 0 {
+		for _, err := range errors {
+			c.Error(err)
+		}
+		c.JSON(http.StatusInternalServerError, c.Errors)
 		return
 	}
 
@@ -98,17 +85,27 @@ func (e *Endpoint) UploadFilesHandler(c *gin.Context) {
 func (e *Endpoint) DownloadFile(c *gin.Context) {
 	userPath := c.Param("path")
 
-	//user, err := e.parseUser(c)
-	//if err != nil {
-	//	c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
-	//	return
-	//}
-	//
-	// Проверьте правильность пути и существование файла
-	fileName := filepath.Base(userPath)
-	c.Header("Content-Description", "File Transfer")
-	c.Header("Content-Transfer-Encoding", "binary")
-	c.Header("Content-Disposition", "attachment; filename="+fileName)
-	c.Header("Content-Type", "application/octet-stream")
-	c.File(fileName)
+	// Получаем пользователя
+	user, ok := e.parseUser(c)
+	if !ok {
+		return
+	}
+
+	// Проверяем указанный пользователем путь
+	userPath, err := e.service.ValidatePath(user, c.Param("path"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	file, err := e.service.DownloadFile(userPath)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	if _, err := io.Copy(c.Writer, file); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
 }

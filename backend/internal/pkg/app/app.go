@@ -76,6 +76,7 @@ func New() (*App, error) {
 	// Работа с файлами
 	apiRouter.GET("/items/*path", endpoints.GetFilesHandler)
 	apiRouter.POST("/items/upload/*path", endpoints.UploadFilesHandler)
+	apiRouter.GET("/item/*path", endpoints.DownloadFile)
 
 	// Define a route for testing authorization
 	apiRouter.GET("/me", func(c *gin.Context) {

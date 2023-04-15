@@ -103,3 +103,12 @@ func (s *Storage) SaveFile(file *multipart.FileHeader, path string) error {
 	_, err = io.Copy(out, src)
 	return err
 }
+
+func (s *Storage) DownloadFile(filepath string) (io.Reader, error) {
+	// Открываем файл для чтения
+	file, err := os.Open(filepath)
+	if err != nil {
+		return nil, err
+	}
+	return file, nil
+}

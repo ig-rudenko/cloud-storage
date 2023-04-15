@@ -2,6 +2,7 @@ package service
 
 import (
 	"fmt"
+	"io"
 	"mime/multipart"
 	"strings"
 	"sync"
@@ -31,6 +32,10 @@ func (s *Service) GetUserFiles(path string) ([]model.FileInfo, error) {
 		return nil, err
 	}
 	return userFiles, nil
+}
+
+func (s *Service) DownloadFile(filepath string) (io.Reader, error) {
+	return s.storage.DownloadFile(filepath)
 }
 
 func (s *Service) UploadFiles(files []*multipart.FileHeader, path string) []error {
