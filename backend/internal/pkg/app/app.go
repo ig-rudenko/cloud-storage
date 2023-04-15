@@ -77,6 +77,9 @@ func New() (*App, error) {
 	apiRouter.GET("/items/*path", endpoints.GetFilesHandler)
 	apiRouter.POST("/items/upload/*path", endpoints.UploadFilesHandler)
 	apiRouter.GET("/item/*path", endpoints.DownloadFile)
+	apiRouter.POST("/items/create-folder/*path", endpoints.CreateDirectory)
+	apiRouter.POST("/item/rename/*path", endpoints.RenameFile)
+	apiRouter.DELETE("/item/*path", endpoints.DeleteItem)
 
 	// Define a route for testing authorization
 	apiRouter.GET("/me", func(c *gin.Context) {

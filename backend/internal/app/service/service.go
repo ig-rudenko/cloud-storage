@@ -17,6 +17,9 @@ type Storage interface {
 	ListUserFiles(path string) ([]model.FileInfo, error)
 	SaveFile(file *multipart.FileHeader, path string) error
 	DownloadFile(string) (io.Reader, error)
+	DeleteElement(path string) error
+	RenameElement(path, newName string) error
+	CreateFolder(path string) error
 }
 
 type Service struct {

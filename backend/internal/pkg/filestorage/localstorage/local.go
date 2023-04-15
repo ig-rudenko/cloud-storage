@@ -112,3 +112,24 @@ func (s *Storage) DownloadFile(filepath string) (io.Reader, error) {
 	}
 	return file, nil
 }
+
+func (s *Storage) CreateFolder(path string) error {
+	if err := os.MkdirAll(path, 0755); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *Storage) RenameElement(path, newName string) error {
+	if err := os.Rename(path, filepath.Dir(path)+"/"+newName); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *Storage) DeleteElement(path string) error {
+	if err := os.Remove(path); err != nil {
+		return err
+	}
+	return nil
+}

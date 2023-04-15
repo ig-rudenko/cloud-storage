@@ -16,6 +16,9 @@ type Service interface {
 	GetUserFiles(userPath string) ([]model.FileInfo, error)
 	UploadFiles(files []*multipart.FileHeader, path string) []error
 	DownloadFile(string) (io.Reader, error)
+	CreateFolder(filepath string) error
+	RenameFile(filepath, newName string) error
+	DeleteFile(filepath string) error
 }
 
 type TokenCreator interface {

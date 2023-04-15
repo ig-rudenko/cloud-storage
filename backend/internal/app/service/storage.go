@@ -84,3 +84,15 @@ func (s *Service) UploadFiles(files []*multipart.FileHeader, path string) []erro
 
 	return nil
 }
+
+func (s *Service) CreateFolder(filepath string) error {
+	return s.storage.CreateFolder(filepath)
+}
+
+func (s *Service) RenameFile(filepath, newName string) error {
+	return s.storage.RenameElement(newName, filepath)
+}
+
+func (s *Service) DeleteFile(filepath string) error {
+	return s.storage.DeleteElement(filepath)
+}

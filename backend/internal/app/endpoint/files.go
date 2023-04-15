@@ -109,3 +109,89 @@ func (e *Endpoint) DownloadFile(c *gin.Context) {
 		return
 	}
 }
+
+// CreateDirectory Создаем новую директорию
+func (e *Endpoint) CreateDirectory(c *gin.Context) {
+	userPath := c.Param("path")
+
+	// Получаем пользователя
+	user, ok := e.parseUser(c)
+	if !ok {
+		return
+	}
+
+	// Проверяем указанный пользователем путь
+	userPath, err := e.service.ValidatePath(user, c.Param("path"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	if err := e.service.CreateFolder(userPath); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusCreated, gin.H{"status": fmt.Sprintf("directory %s created", userPath)})
+}
+
+// RenameFile Создаем новую директорию
+func (e *Endpoint) RenameFile(c *gin.Context) {
+	userPath := c.Param("path")
+
+	// Получаем пользователя
+	user, ok := e.parseUser(c)
+	if !ok {
+		return
+	}
+
+	// Проверяем указанный пользователем путь
+	userPath, err := e.service.ValidatePath(user, c.Param("path"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	var data map[string]string
+
+	if err := c.ShouldBindJSON(&data); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	newName := data["newName"]
+
+	// Название нового файла должно быть указано
+	if newName == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "newName is required"})
+		return
+	}
+
+	if err := e.service.RenameFile(newName, userPath); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusCreated, gin.H{"status": fmt.Sprintf("%s renamed to %s", userPath, newName)})
+}
+
+func (e *Endpoint) DeleteItem(c *gin.Context) {
+	userPath := c.Param("path")
+
+	// Получаем пользователя
+	user, ok := e.parseUser(c)
+	if !ok {
+		return
+	}
+
+	// Проверяем указанный пользователем путь
+	userPath, err := e.service.ValidatePath(user, c.Param("path"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	if err := e.service.DeleteFile(userPath); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusCreated, gin.H{"status": fmt.Sprintf("%s deleted", userPath)})
+}
