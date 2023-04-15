@@ -2,7 +2,11 @@ package localstorage
 
 import (
 	"fmt"
+	"io"
+	"log"
+	"mime/multipart"
 	"os"
+	"path/filepath"
 	"strings"
 	"web/backend/internal/app/model"
 )
@@ -75,4 +79,27 @@ func (s *Storage) ListUserFiles(path string) ([]model.FileInfo, error) {
 	}
 
 	return fileInfos, nil
+}
+
+func (s *Storage) SaveFile(file *multipart.FileHeader, path string) error {
+	log.Println(path)
+	src, err := file.Open()
+	if err != nil {
+		return err
+	}
+	defer src.Close()
+
+	if err = os.MkdirAll(filepath.Dir(path), 0750); err != nil {
+		return err
+	}
+
+	dst := filepath.Join(path, file.Filename)
+	out, err := os.Create(dst)
+	if err != nil {
+		return err
+	}
+	defer out.Close()
+
+	_, err = io.Copy(out, src)
+	return err
 }

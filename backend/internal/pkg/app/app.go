@@ -70,12 +70,12 @@ func New() (*App, error) {
 
 	// Router для API
 	apiRouter := app.server.Engine.Group("/api")
-
 	// Middleware для проверки JWT
 	apiRouter.Use(middleware.JWTAuthMiddleware(serverConfig.SecretKey))
 
 	// Работа с файлами
 	apiRouter.GET("/items/*path", endpoints.GetFilesHandler)
+	apiRouter.POST("/items/upload/*path", endpoints.UploadFilesHandler)
 
 	// Define a route for testing authorization
 	apiRouter.GET("/me", func(c *gin.Context) {

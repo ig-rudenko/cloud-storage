@@ -1,8 +1,9 @@
 package endpoint
 
 import (
-	"fmt"
 	"github.com/gin-gonic/gin"
+	"mime/multipart"
+	"net/http"
 	"strconv"
 	"web/backend/internal/app/model"
 )
@@ -10,7 +11,9 @@ import (
 type Service interface {
 	InitUser(user *model.User) error
 	GetUser(username string) (model.User, error)
-	GetUserFiles(user *model.User, userPath string) ([]model.FileInfo, error)
+	ValidatePath(user *model.User, path string) (string, error)
+	GetUserFiles(userPath string) ([]model.FileInfo, error)
+	UploadFiles(files []*multipart.FileHeader, path string) []error
 }
 
 type TokenCreator interface {
@@ -37,22 +40,24 @@ func New(svr Service, token TokenCreator) *Endpoint {
 	}
 }
 
-func (e *Endpoint) parseUser(c *gin.Context) (*model.User, error) {
+func (e *Endpoint) parseUser(c *gin.Context) (*model.User, bool) {
 	// Get user id from Gin context
 	userID, _ := c.Get("user_id")
 	if userID == nil {
-		return nil, fmt.Errorf("invalid user")
+		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "invalid user"})
+		return nil, false
 	}
 
 	// Конвертируем ID пользователя из строки в int
 	id, err := strconv.Atoi(userID.(string))
 	if err != nil {
-		return nil, fmt.Errorf("invalid user id")
+		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "invalid user id"})
+		return nil, false
 	}
 
 	// Создаем пользователя
 	user := &model.User{
 		ID: uint(id),
 	}
-	return user, nil
+	return user, true
 }

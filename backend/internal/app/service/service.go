@@ -1,6 +1,9 @@
 package service
 
-import "web/backend/internal/app/model"
+import (
+	"mime/multipart"
+	"web/backend/internal/app/model"
+)
 
 type DataBase interface {
 	Create(model interface{}) error
@@ -11,6 +14,7 @@ type Storage interface {
 	CreateUserStorage(name string) error
 	ValidateUserStoragePath(user *model.User, path string) (validPath string, err error)
 	ListUserFiles(path string) ([]model.FileInfo, error)
+	SaveFile(file *multipart.FileHeader, path string) error
 }
 
 type Service struct {
