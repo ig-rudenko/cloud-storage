@@ -69,10 +69,10 @@ STORAGE_DIR=storage
 Иерархия файлового хранилища:
 
 * storage/
-  * <user-id>/
-    * <files...>
-  * <user-id>/
-    * <files...>
+  * < user-id >/
+    * < files... >
+  * < user-id >/
+    * < files... >
 
 ## Запуск
 
