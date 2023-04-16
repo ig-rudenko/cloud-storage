@@ -1,0 +1,534 @@
+{
+    "schemes": [
+        "http"
+    ],
+    "swagger": "2.0",
+    "info": {
+        "description": "Simple cloud file storage.",
+        "title": "Black-Hole Cloud Storage API",
+        "contact": {},
+        "license": {
+            "name": "Apache 2.0",
+            "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
+        },
+        "version": "1.0"
+    },
+    "host": "localhost:8080",
+    "basePath": "/",
+    "paths": {
+        "/api/auth/register": {
+            "post": {
+                "description": "Регистрация нового пользователя.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Регистрация нового пользователя.",
+                "operationId": "register-user",
+                "parameters": [
+                    {
+                        "description": "user data",
+                        "name": "input",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/endpoint.userForm"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created"
+                    },
+                    "400": {
+                        "description": "invalid user data",
+                        "schema": {
+                            "$ref": "#/definitions/endpoint.errorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "failed to init user storage",
+                        "schema": {
+                            "$ref": "#/definitions/endpoint.errorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/auth/token": {
+            "post": {
+                "description": "Создает и возвращает токен доступа и токен обновления для заданных учетных данных пользователя.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Получение JWT.",
+                "operationId": "login",
+                "parameters": [
+                    {
+                        "description": "user data",
+                        "name": "input",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/endpoint.userForm"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "JWT Pair",
+                        "schema": {
+                            "$ref": "#/definitions/endpoint.tokenPair"
+                        }
+                    },
+                    "400": {
+                        "description": "invalid user data",
+                        "schema": {
+                            "$ref": "#/definitions/endpoint.errorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "failed to create JWT Pair",
+                        "schema": {
+                            "$ref": "#/definitions/endpoint.errorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/auth/token/refresh": {
+            "post": {
+                "description": "Обновляет и возвращает токен доступа для данного токена обновления.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Обновление access токена.",
+                "operationId": "refresh-token",
+                "parameters": [
+                    {
+                        "description": "refresh token",
+                        "name": "input",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/endpoint.refreshToken"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "access token",
+                        "schema": {
+                            "$ref": "#/definitions/endpoint.accessToken"
+                        }
+                    },
+                    "400": {
+                        "description": "invalid refresh token",
+                        "schema": {
+                            "$ref": "#/definitions/endpoint.errorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "invalid refresh token",
+                        "schema": {
+                            "$ref": "#/definitions/endpoint.errorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/item/{path}": {
+            "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "Отправляем файл пользователю.",
+                "tags": [
+                    "storage"
+                ],
+                "summary": "Отправка файла.",
+                "operationId": "download-files",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "path to file",
+                        "name": "path",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "file"
+                    },
+                    "400": {
+                        "description": "invalid user or path",
+                        "schema": {
+                            "$ref": "#/definitions/endpoint.errorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "unable to send user file",
+                        "schema": {
+                            "$ref": "#/definitions/endpoint.errorResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "Удаляем папку или файл указанный в параметре path.",
+                "tags": [
+                    "storage"
+                ],
+                "summary": "Удаление директории/файла.",
+                "operationId": "delete-item",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "path to dir/file",
+                        "name": "path",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "new file/directory name",
+                        "name": "input",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/endpoint.newItemName"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "description": "invalid user or path",
+                        "schema": {
+                            "$ref": "#/definitions/endpoint.errorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "unable to delete directory",
+                        "schema": {
+                            "$ref": "#/definitions/endpoint.errorResponse"
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "Переименновываем папку или файл указанный в параметре path.",
+                "tags": [
+                    "storage"
+                ],
+                "summary": "Переименование директории/файла.",
+                "operationId": "rename-item",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "path to dir/file",
+                        "name": "path",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "new file/directory name",
+                        "name": "input",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/endpoint.newItemName"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "renamed",
+                        "schema": {
+                            "$ref": "#/definitions/endpoint.statusResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "invalid user or path",
+                        "schema": {
+                            "$ref": "#/definitions/endpoint.errorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "unable to rename directory",
+                        "schema": {
+                            "$ref": "#/definitions/endpoint.errorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/items/create-folder/{path}": {
+            "post": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "Создаем новую директорию в папке указанной в параметре path.",
+                "tags": [
+                    "storage"
+                ],
+                "summary": "Создание новой директории.",
+                "operationId": "create-directory",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "path to file",
+                        "name": "path",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created"
+                    },
+                    "400": {
+                        "description": "invalid user or path",
+                        "schema": {
+                            "$ref": "#/definitions/endpoint.errorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "unable to create directory",
+                        "schema": {
+                            "$ref": "#/definitions/endpoint.errorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/items/upload/{path}": {
+            "post": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "Сохранение одного или нескольких файлов в указанную директорию.",
+                "consumes": [
+                    "multipart/form-data"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "storage"
+                ],
+                "summary": "Загрузка файлов.",
+                "operationId": "upload-files",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "path to directory",
+                        "name": "path",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "file",
+                        "description": "files",
+                        "name": "files",
+                        "in": "formData",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "{n} files uploaded to {path}",
+                        "schema": {
+                            "$ref": "#/definitions/endpoint.statusResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "invalid user or path",
+                        "schema": {
+                            "$ref": "#/definitions/endpoint.errorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "unable to upload",
+                        "schema": {
+                            "$ref": "#/definitions/endpoint.errorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/items/{path}": {
+            "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "Получение списка файлов и папок в указанной директории.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "storage"
+                ],
+                "summary": "Список файлов.",
+                "operationId": "get-files-list",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "path to directory",
+                        "name": "path",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "user's files",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/model.FileInfo"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "invalid user or path",
+                        "schema": {
+                            "$ref": "#/definitions/endpoint.errorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "unable to access user storage",
+                        "schema": {
+                            "$ref": "#/definitions/endpoint.errorResponse"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "endpoint.accessToken": {
+            "type": "object",
+            "properties": {
+                "accessToken": {
+                    "type": "string"
+                }
+            }
+        },
+        "endpoint.errorResponse": {
+            "type": "object",
+            "properties": {
+                "error": {
+                    "type": "string"
+                }
+            }
+        },
+        "endpoint.newItemName": {
+            "type": "object",
+            "properties": {
+                "newName": {
+                    "type": "string"
+                }
+            }
+        },
+        "endpoint.refreshToken": {
+            "type": "object",
+            "properties": {
+                "refreshToken": {
+                    "type": "string"
+                }
+            }
+        },
+        "endpoint.statusResponse": {
+            "type": "object",
+            "properties": {
+                "status": {
+                    "type": "string"
+                }
+            }
+        },
+        "endpoint.tokenPair": {
+            "type": "object",
+            "properties": {
+                "accessToken": {
+                    "type": "string"
+                },
+                "refreshToken": {
+                    "type": "string"
+                }
+            }
+        },
+        "endpoint.userForm": {
+            "type": "object",
+            "properties": {
+                "password": {
+                    "type": "string"
+                },
+                "username": {
+                    "type": "string"
+                }
+            }
+        },
+        "model.FileInfo": {
+            "type": "object",
+            "properties": {
+                "isDir": {
+                    "type": "boolean"
+                },
+                "modTime": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "size": {
+                    "type": "integer"
+                }
+            }
+        }
+    },
+    "securityDefinitions": {
+        "Bearer": {
+            "type": "apiKey",
+            "name": "Authorization",
+            "in": "header"
+        }
+    }
+}

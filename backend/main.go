@@ -3,59 +3,106 @@ package main
 import (
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
-	"gorm.io/driver/mysql"
-	"gorm.io/gorm"
-	"log"
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 	"net/http"
-	"web/backend/api"
-	"web/backend/config"
+	"web/backend/internal/app/endpoint"
+	"web/backend/internal/app/middleware"
+	"web/backend/internal/app/model"
+	"web/backend/internal/app/server"
+	"web/backend/internal/app/service"
+	"web/backend/internal/pkg/database/mysqldb"
+	"web/backend/internal/pkg/filestorage/localstorage"
+	"web/backend/internal/pkg/token"
 )
 
+// App ...
+type App struct {
+	server *server.Server
+}
+
+// @title Gin Swagger Example API
+// @version 1.0
+// @description This is a sample server.
+// @termsOfService http://swagger.io/terms/
+
+// @contact.name API Support
+// @contact.url http://www.swagger.io/support
+// @contact.email support@swagger.io
+
+// @license.name Apache 2.0
+// @license.url http://www.apache.org/licenses/LICENSE-2.0.html
+
+// @host localhost:3000
+// @BasePath /
+// @schemes http
 func main() {
+	app := &App{}
 
-	var err error
-
-	// Connect to the database using the username, password, host, port and database name
-	config.DB, err = gorm.Open(mysql.Open(config.DSN), &gorm.Config{})
+	// Инициализация БД (MySQL)
+	dbConfig := mysqldb.NewConfig()
+	db := mysqldb.New(dbConfig)
+	err := db.Open() // Подключаемся к БД
 	if err != nil {
-		panic("failed to connect to database")
+		return
 	}
 
-	// Migrate the user model
-	err = config.DB.AutoMigrate(&api.User{})
+	// Миграция (User)
+	err = db.AutoMigrate(&model.User{})
 	if err != nil {
-		panic("failed to migrate database")
+		return
 	}
 
-	// Create a Gin router with default middleware
-	router := gin.Default()
-	router.Use(cors.New(cors.Config{
+	// Создание сервера
+	serverConfig := server.NewConfig()
+	serverConfig.Address = ":8080"
+	app.server = server.New(serverConfig)
+
+	// Файловое хранилище (локальное)
+	fileStorageConfig := localstorage.NewConfig()
+	fileStorage := localstorage.New(fileStorageConfig)
+
+	// Для создания токенов используем JWT Creator
+	JWTCreator := token.New(serverConfig.SecretKey)
+
+	// Сервис
+	mainService := service.New(db, fileStorage)
+
+	// Endpoints для обработки запросов
+	endpoints := endpoint.New(mainService, JWTCreator)
+
+	app.server.Engine.Use(cors.New(cors.Config{
 		AllowOrigins: []string{"*"},
 		AllowMethods: []string{"POST", "PUT", "PATCH", "DELETE"},
 		AllowHeaders: []string{"Content-Type,access-control-allow-origin, access-control-allow-headers"},
 	}))
-	apiRouter := router.Group("/api")
-	authRouter := router.Group("/api/auth")
 
-	// Use AuthMiddleware for routes under /api prefix
-	apiRouter.Use(AuthMiddleware(config.SecretKey))
+	// Документация
+	app.server.Engine.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
-	// Define a route for generating tokens
-	authRouter.POST("/token", api.GenerateToken)
-	// Define a route for refreshing tokens
-	authRouter.POST("/token/refresh", api.RefreshToken)
-	authRouter.POST("/register", api.CreateUser)
+	// Router для авторизации и создания нового пользователя
+	authRouter := app.server.Engine.Group("/api/auth")
+	// router: /api/auth
+	{
+		authRouter.POST("/token", endpoints.GenerateToken)
+		authRouter.POST("/token/refresh", endpoints.RefreshToken)
+		authRouter.POST("/register", endpoints.RegisterNewUser)
+	}
 
-	// Работа с файлами
-	apiRouter.GET("/items/*path", api.GetFilesHandler)
-	apiRouter.POST("/items/upload/*path", api.PostFilesHandler)
-	apiRouter.POST("/items/create-folder/*path", api.CreateFolderHandler)
-
-	// Работа с одним файлом
-	apiRouter.GET("/item/*path", api.DownloadFile)
-	apiRouter.POST("/item/rename/*path", api.RenameFileHandler)
-	apiRouter.DELETE("/item/*path", api.DeleteFileHandler)
-
+	// Router для API
+	apiRouter := app.server.Engine.Group("/api")
+	// Middleware для проверки JWT
+	apiRouter.Use(middleware.JWTAuthMiddleware(serverConfig.SecretKey))
+	// router: /api
+	{
+		// Работа с файлами
+		apiRouter.GET("/items/*path", endpoints.GetFilesHandler)
+		apiRouter.POST("/items/upload/*path", endpoints.UploadFilesHandler)
+		apiRouter.GET("/item/*path", endpoints.DownloadFile)
+		apiRouter.POST("/items/create-folder/*path", endpoints.CreateDirectory)
+		apiRouter.POST("/item/rename/*path", endpoints.RenameFile)
+		apiRouter.DELETE("/item/*path", endpoints.DeleteItem)
+	}
 	// Define a route for testing authorization
 	apiRouter.GET("/me", func(c *gin.Context) {
 		// Get user id from Gin context
@@ -66,7 +113,4 @@ func main() {
 			"user_id": userID,
 		})
 	})
-
-	// Run router on port 8080
-	log.Fatal(router.Run(":8080"))
 }

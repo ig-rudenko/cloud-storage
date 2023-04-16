@@ -8,7 +8,18 @@ import (
 	"strings"
 )
 
-// GetFilesHandler Функция для получения списка файлов и папок в указанной директории
+// GetFilesHandler 	godoc
+// @Summary        	Список файлов.
+// @Security		Bearer
+// @Description    	Получение списка файлов и папок в указанной директории.
+// @Tags 			storage
+// @ID 				get-files-list
+// @Produce			json
+// @Param 			path path string true "path to directory"
+// @Success        	200 {object} []model.FileInfo "user's files"
+// @Failure			400 {object} errorResponse "invalid user or path"
+// @Failure			500 {object} errorResponse "unable to access user storage"
+// @Router         	/api/items/{path} [get]
 func (e *Endpoint) GetFilesHandler(c *gin.Context) {
 
 	user, ok := e.parseUser(c)
@@ -42,7 +53,20 @@ func (e *Endpoint) GetFilesHandler(c *gin.Context) {
 
 }
 
-// UploadFilesHandler Функция для загрузки одного или нескольких файлов в указанную директорию
+// UploadFilesHandler godoc
+// @Summary        	Загрузка файлов.
+// @Security		Bearer
+// @Description    	Сохранение одного или нескольких файлов в указанную директорию.
+// @Tags 			storage
+// @ID 				upload-files
+// @Accept			multipart/form-data
+// @Produce			json
+// @Param 			path path string true "path to directory"
+// @Param 			files formData file true "files"
+// @Success        	200 {object} statusResponse "{n} files uploaded to {path}"
+// @Failure			400 {object} errorResponse "invalid user or path"
+// @Failure			500 {object} errorResponse "unable to upload"
+// @Router         	/api/items/upload/{path} [post]
 func (e *Endpoint) UploadFilesHandler(c *gin.Context) {
 
 	// Получаем пользователя
@@ -54,14 +78,14 @@ func (e *Endpoint) UploadFilesHandler(c *gin.Context) {
 	// Проверяем указанный пользователем путь
 	userPath, err := e.service.ValidatePath(user, c.Param("path"))
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		newErrorResponse(c, http.StatusBadRequest, err.Error())
 		return
 	}
 
 	// Получаем данные формы пользователя
 	form, err := c.MultipartForm()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		newErrorResponse(c, http.StatusBadRequest, err.Error())
 		return
 	}
 
@@ -71,17 +95,28 @@ func (e *Endpoint) UploadFilesHandler(c *gin.Context) {
 	errors := e.service.UploadFiles(files, userPath)
 
 	if len(errors) > 0 {
+		var errorString string
 		for _, err := range errors {
-			c.Error(err)
+			errorString += err.Error()
 		}
-		c.JSON(http.StatusInternalServerError, c.Errors)
+		newErrorResponse(c, http.StatusInternalServerError, errorString)
 		return
 	}
 
-	c.JSON(http.StatusCreated, gin.H{"status": fmt.Sprintf("%d files uploaded to %s", len(files), userPath)})
+	newStatusResponse(c, http.StatusCreated, fmt.Sprintf("%d files uploaded to %s", len(files), userPath))
 }
 
-// DownloadFile Отправляем файл пользователю
+// DownloadFile 	godoc
+// @Summary        	Отправка файла.
+// @Security		Bearer
+// @Description    	Отправляем файл пользователю.
+// @Tags 			storage
+// @ID 				download-files
+// @Param 			path path string true "path to file"
+// @Success        	200 "file"
+// @Failure			400 {object} errorResponse "invalid user or path"
+// @Failure			500 {object} errorResponse "unable to send user file"
+// @Router         	/api/item/{path} [get]
 func (e *Endpoint) DownloadFile(c *gin.Context) {
 	userPath := c.Param("path")
 
@@ -94,23 +129,33 @@ func (e *Endpoint) DownloadFile(c *gin.Context) {
 	// Проверяем указанный пользователем путь
 	userPath, err := e.service.ValidatePath(user, c.Param("path"))
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		newErrorResponse(c, http.StatusBadRequest, err.Error())
 		return
 	}
 
 	file, err := e.service.DownloadFile(userPath)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		newErrorResponse(c, http.StatusBadRequest, err.Error())
 		return
 	}
 
 	if _, err := io.Copy(c.Writer, file); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		newErrorResponse(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 }
 
-// CreateDirectory Создаем новую директорию
+// CreateDirectory 	godoc
+// @Summary        	Создание новой директории.
+// @Security		Bearer
+// @Description    	Создаем новую директорию в папке указанной в параметре path.
+// @Tags 			storage
+// @ID 				create-directory
+// @Param 			path path string true "path to file"
+// @Success        	201
+// @Failure			400 {object} errorResponse "invalid user or path"
+// @Failure			500 {object} errorResponse "unable to create directory"
+// @Router         	/api/items/create-folder/{path} [post]
 func (e *Endpoint) CreateDirectory(c *gin.Context) {
 	userPath := c.Param("path")
 
@@ -123,18 +168,29 @@ func (e *Endpoint) CreateDirectory(c *gin.Context) {
 	// Проверяем указанный пользователем путь
 	userPath, err := e.service.ValidatePath(user, c.Param("path"))
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		newErrorResponse(c, http.StatusBadRequest, err.Error())
 		return
 	}
 
 	if err := e.service.CreateFolder(userPath); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		newErrorResponse(c, http.StatusInternalServerError, err.Error())
 		return
 	}
-	c.JSON(http.StatusCreated, gin.H{"status": fmt.Sprintf("directory %s created", userPath)})
+	newStatusResponse(c, http.StatusCreated, fmt.Sprintf("directory %s created", userPath))
 }
 
-// RenameFile Создаем новую директорию
+// RenameFile 		godoc
+// @Summary        	Переименование директории/файла.
+// @Security		Bearer
+// @Description    	Переименновываем папку или файл указанный в параметре path.
+// @Tags 			storage
+// @ID 				rename-item
+// @Param 			path path string true "path to dir/file"
+// @Param			input body newItemName true "new file/directory name"
+// @Success        	200 {object} statusResponse "renamed"
+// @Failure			400 {object} errorResponse "invalid user or path"
+// @Failure			500 {object} errorResponse "unable to rename directory"
+// @Router         	/api/item/{path} [patch]
 func (e *Endpoint) RenameFile(c *gin.Context) {
 	userPath := c.Param("path")
 
@@ -151,28 +207,38 @@ func (e *Endpoint) RenameFile(c *gin.Context) {
 		return
 	}
 
-	var data map[string]string
+	var newName newItemName
 
-	if err := c.ShouldBindJSON(&data); err != nil {
+	if err := c.ShouldBindJSON(&newName); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	newName := data["newName"]
-
 	// Название нового файла должно быть указано
-	if newName == "" {
+	if newName.Name == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "newName is required"})
 		return
 	}
 
-	if err := e.service.RenameFile(newName, userPath); err != nil {
+	if err := e.service.RenameFile(newName.Name, userPath); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 	c.JSON(http.StatusCreated, gin.H{"status": fmt.Sprintf("%s renamed to %s", userPath, newName)})
 }
 
+// DeleteItem 		godoc
+// @Summary        	Удаление директории/файла.
+// @Security		Bearer
+// @Description    	Удаляем папку или файл указанный в параметре path.
+// @Tags 			storage
+// @ID 				delete-item
+// @Param 			path path string true "path to dir/file"
+// @Param			input body newItemName true "new file/directory name"
+// @Success        	204
+// @Failure			400 {object} errorResponse "invalid user or path"
+// @Failure			500 {object} errorResponse "unable to delete directory"
+// @Router         	/api/item/{path} [delete]
 func (e *Endpoint) DeleteItem(c *gin.Context) {
 	userPath := c.Param("path")
 
@@ -193,5 +259,5 @@ func (e *Endpoint) DeleteItem(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	c.JSON(http.StatusCreated, gin.H{"status": fmt.Sprintf("%s deleted", userPath)})
+	c.Status(http.StatusNoContent)
 }

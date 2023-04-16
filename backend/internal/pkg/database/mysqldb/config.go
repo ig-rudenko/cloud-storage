@@ -19,7 +19,8 @@ func NewConfig() *Config {
 		getEnv("DB_PASS", "password"),
 		getEnv("DB_HOST", "localhost"),
 		getEnv("DB_PORT", "3306"),
-		getEnv("DB_NAME", "test_go"))
+		getEnv("DB_NAME", "test_go"),
+	)
 
 	return &Config{
 		DNS:  DSN,

@@ -33,9 +33,31 @@ type Endpoint struct {
 	tokenGen TokenCreator
 }
 
-type TokenPair struct {
+// tokenPair пара токенов
+type tokenPair struct {
 	AccessToken  string `json:"accessToken"`
 	RefreshToken string `json:"refreshToken"`
+}
+
+// accessToken
+type accessToken struct {
+	Token string `json:"accessToken"`
+}
+
+// refreshToken
+type refreshToken struct {
+	Token string `json:"refreshToken"`
+}
+
+// newName новое название для файла или директории
+type newItemName struct {
+	Name string `json:"newName"`
+}
+
+// userForm форма для данных пользователя
+type userForm struct {
+	Username string `json:"username"`
+	Password string `json:"password"`
 }
 
 func New(svr Service, token TokenCreator) *Endpoint {
@@ -49,14 +71,14 @@ func (e *Endpoint) parseUser(c *gin.Context) (*model.User, bool) {
 	// Get user id from Gin context
 	userID, _ := c.Get("user_id")
 	if userID == nil {
-		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "invalid user"})
+		newErrorResponse(c, http.StatusBadRequest, "invalid user")
 		return nil, false
 	}
 
 	// Конвертируем ID пользователя из строки в int
 	id, err := strconv.Atoi(userID.(string))
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "invalid user id"})
+		newErrorResponse(c, http.StatusBadRequest, "invalid user id")
 		return nil, false
 	}
 

@@ -1,0 +1,347 @@
+basePath: /
+definitions:
+  endpoint.accessToken:
+    properties:
+      accessToken:
+        type: string
+    type: object
+  endpoint.errorResponse:
+    properties:
+      error:
+        type: string
+    type: object
+  endpoint.newItemName:
+    properties:
+      newName:
+        type: string
+    type: object
+  endpoint.refreshToken:
+    properties:
+      refreshToken:
+        type: string
+    type: object
+  endpoint.statusResponse:
+    properties:
+      status:
+        type: string
+    type: object
+  endpoint.tokenPair:
+    properties:
+      accessToken:
+        type: string
+      refreshToken:
+        type: string
+    type: object
+  endpoint.userForm:
+    properties:
+      password:
+        type: string
+      username:
+        type: string
+    type: object
+  model.FileInfo:
+    properties:
+      isDir:
+        type: boolean
+      modTime:
+        type: string
+      name:
+        type: string
+      size:
+        type: integer
+    type: object
+host: localhost:8080
+info:
+  contact: {}
+  description: Simple cloud file storage.
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  title: Black-Hole Cloud Storage API
+  version: "1.0"
+paths:
+  /api/auth/register:
+    post:
+      consumes:
+      - application/json
+      description: Регистрация нового пользователя.
+      operationId: register-user
+      parameters:
+      - description: user data
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/endpoint.userForm'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+        "400":
+          description: invalid user data
+          schema:
+            $ref: '#/definitions/endpoint.errorResponse'
+        "500":
+          description: failed to init user storage
+          schema:
+            $ref: '#/definitions/endpoint.errorResponse'
+      summary: Регистрация нового пользователя.
+      tags:
+      - auth
+  /api/auth/token:
+    post:
+      consumes:
+      - application/json
+      description: Создает и возвращает токен доступа и токен обновления для заданных
+        учетных данных пользователя.
+      operationId: login
+      parameters:
+      - description: user data
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/endpoint.userForm'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: JWT Pair
+          schema:
+            $ref: '#/definitions/endpoint.tokenPair'
+        "400":
+          description: invalid user data
+          schema:
+            $ref: '#/definitions/endpoint.errorResponse'
+        "500":
+          description: failed to create JWT Pair
+          schema:
+            $ref: '#/definitions/endpoint.errorResponse'
+      summary: Получение JWT.
+      tags:
+      - auth
+  /api/auth/token/refresh:
+    post:
+      consumes:
+      - application/json
+      description: Обновляет и возвращает токен доступа для данного токена обновления.
+      operationId: refresh-token
+      parameters:
+      - description: refresh token
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/endpoint.refreshToken'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: access token
+          schema:
+            $ref: '#/definitions/endpoint.accessToken'
+        "400":
+          description: invalid refresh token
+          schema:
+            $ref: '#/definitions/endpoint.errorResponse'
+        "401":
+          description: invalid refresh token
+          schema:
+            $ref: '#/definitions/endpoint.errorResponse'
+      summary: Обновление access токена.
+      tags:
+      - auth
+  /api/item/{path}:
+    delete:
+      description: Удаляем папку или файл указанный в параметре path.
+      operationId: delete-item
+      parameters:
+      - description: path to dir/file
+        in: path
+        name: path
+        required: true
+        type: string
+      - description: new file/directory name
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/endpoint.newItemName'
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: invalid user or path
+          schema:
+            $ref: '#/definitions/endpoint.errorResponse'
+        "500":
+          description: unable to delete directory
+          schema:
+            $ref: '#/definitions/endpoint.errorResponse'
+      security:
+      - Bearer: []
+      summary: Удаление директории/файла.
+      tags:
+      - storage
+    get:
+      description: Отправляем файл пользователю.
+      operationId: download-files
+      parameters:
+      - description: path to file
+        in: path
+        name: path
+        required: true
+        type: string
+      responses:
+        "200":
+          description: file
+        "400":
+          description: invalid user or path
+          schema:
+            $ref: '#/definitions/endpoint.errorResponse'
+        "500":
+          description: unable to send user file
+          schema:
+            $ref: '#/definitions/endpoint.errorResponse'
+      security:
+      - Bearer: []
+      summary: Отправка файла.
+      tags:
+      - storage
+    patch:
+      description: Переименновываем папку или файл указанный в параметре path.
+      operationId: rename-item
+      parameters:
+      - description: path to dir/file
+        in: path
+        name: path
+        required: true
+        type: string
+      - description: new file/directory name
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/endpoint.newItemName'
+      responses:
+        "200":
+          description: renamed
+          schema:
+            $ref: '#/definitions/endpoint.statusResponse'
+        "400":
+          description: invalid user or path
+          schema:
+            $ref: '#/definitions/endpoint.errorResponse'
+        "500":
+          description: unable to rename directory
+          schema:
+            $ref: '#/definitions/endpoint.errorResponse'
+      security:
+      - Bearer: []
+      summary: Переименование директории/файла.
+      tags:
+      - storage
+  /api/items/{path}:
+    get:
+      description: Получение списка файлов и папок в указанной директории.
+      operationId: get-files-list
+      parameters:
+      - description: path to directory
+        in: path
+        name: path
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: user's files
+          schema:
+            items:
+              $ref: '#/definitions/model.FileInfo'
+            type: array
+        "400":
+          description: invalid user or path
+          schema:
+            $ref: '#/definitions/endpoint.errorResponse'
+        "500":
+          description: unable to access user storage
+          schema:
+            $ref: '#/definitions/endpoint.errorResponse'
+      security:
+      - Bearer: []
+      summary: Список файлов.
+      tags:
+      - storage
+  /api/items/create-folder/{path}:
+    post:
+      description: Создаем новую директорию в папке указанной в параметре path.
+      operationId: create-directory
+      parameters:
+      - description: path to file
+        in: path
+        name: path
+        required: true
+        type: string
+      responses:
+        "201":
+          description: Created
+        "400":
+          description: invalid user or path
+          schema:
+            $ref: '#/definitions/endpoint.errorResponse'
+        "500":
+          description: unable to create directory
+          schema:
+            $ref: '#/definitions/endpoint.errorResponse'
+      security:
+      - Bearer: []
+      summary: Создание новой директории.
+      tags:
+      - storage
+  /api/items/upload/{path}:
+    post:
+      consumes:
+      - multipart/form-data
+      description: Сохранение одного или нескольких файлов в указанную директорию.
+      operationId: upload-files
+      parameters:
+      - description: path to directory
+        in: path
+        name: path
+        required: true
+        type: string
+      - description: files
+        in: formData
+        name: files
+        required: true
+        type: file
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: '{n} files uploaded to {path}'
+          schema:
+            $ref: '#/definitions/endpoint.statusResponse'
+        "400":
+          description: invalid user or path
+          schema:
+            $ref: '#/definitions/endpoint.errorResponse'
+        "500":
+          description: unable to upload
+          schema:
+            $ref: '#/definitions/endpoint.errorResponse'
+      security:
+      - Bearer: []
+      summary: Загрузка файлов.
+      tags:
+      - storage
+schemes:
+- http
+securityDefinitions:
+  Bearer:
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

@@ -4,7 +4,10 @@ import (
 	"fmt"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 	"net/http"
+	_ "web/backend/docs"
 	"web/backend/internal/app/endpoint"
 	"web/backend/internal/app/middleware"
 	"web/backend/internal/app/model"
@@ -58,29 +61,36 @@ func New() (*App, error) {
 
 	app.server.Engine.Use(cors.New(cors.Config{
 		AllowOrigins: []string{"*"},
-		AllowMethods: []string{"POST", "PUT", "PATCH", "DELETE"},
-		AllowHeaders: []string{"Content-Type,access-control-allow-origin, access-control-allow-headers"},
+		//AllowMethods: []string{"POST", "PUT", "PATCH", "DELETE"},
+		//AllowHeaders: []string{"Content-Type,access-control-allow-origin, access-control-allow-headers"},
 	}))
+
+	// Документация
+	app.server.Engine.GET("/api/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
 	// Router для авторизации и создания нового пользователя
 	authRouter := app.server.Engine.Group("/api/auth")
-	authRouter.POST("/token", endpoints.GenerateToken)
-	authRouter.POST("/token/refresh", endpoints.RefreshToken)
-	authRouter.POST("/register", endpoints.RegisterNewUser)
+	// router: /api/auth
+	{
+		authRouter.POST("/token", endpoints.GenerateToken)
+		authRouter.POST("/token/refresh", endpoints.RefreshToken)
+		authRouter.POST("/register", endpoints.RegisterNewUser)
+	}
 
 	// Router для API
 	apiRouter := app.server.Engine.Group("/api")
 	// Middleware для проверки JWT
 	apiRouter.Use(middleware.JWTAuthMiddleware(serverConfig.SecretKey))
-
-	// Работа с файлами
-	apiRouter.GET("/items/*path", endpoints.GetFilesHandler)
-	apiRouter.POST("/items/upload/*path", endpoints.UploadFilesHandler)
-	apiRouter.GET("/item/*path", endpoints.DownloadFile)
-	apiRouter.POST("/items/create-folder/*path", endpoints.CreateDirectory)
-	apiRouter.POST("/item/rename/*path", endpoints.RenameFile)
-	apiRouter.DELETE("/item/*path", endpoints.DeleteItem)
-
+	// router: /api
+	{
+		// Работа с файлами
+		apiRouter.GET("/items/*path", endpoints.GetFilesHandler)
+		apiRouter.POST("/items/upload/*path", endpoints.UploadFilesHandler)
+		apiRouter.POST("/items/create-folder/*path", endpoints.CreateDirectory)
+		apiRouter.GET("/item/*path", endpoints.DownloadFile)
+		apiRouter.PATCH("/item/*path", endpoints.RenameFile)
+		apiRouter.DELETE("/item/*path", endpoints.DeleteItem)
+	}
 	// Define a route for testing authorization
 	apiRouter.GET("/me", func(c *gin.Context) {
 		// Get user id from Gin context
