@@ -221,10 +221,10 @@ func (e *Endpoint) RenameFile(c *gin.Context) {
 	}
 
 	if err := e.service.RenameFile(newName.Name, userPath); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	c.JSON(http.StatusCreated, gin.H{"status": fmt.Sprintf("%s renamed to %s", userPath, newName)})
+	c.JSON(http.StatusOK, gin.H{"status": fmt.Sprintf("%s renamed to %s", userPath, newName)})
 }
 
 // DeleteItem 		godoc

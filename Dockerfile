@@ -11,7 +11,7 @@ RUN go mod download
 COPY backend backend
 
 # Собираем бинарный файл приложения с отключением CGO
-RUN CGO_ENABLED=0 go build -o server ./backend/
+RUN CGO_ENABLED=0 go build -o server ./backend/cmd/app/main.go
 
 # Стадия запуска
 FROM alpine

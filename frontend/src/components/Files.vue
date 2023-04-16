@@ -204,8 +204,8 @@ export default {
 
     async renameFile() {
       let newName = prompt("Введите название папки", this.selectedFile.name)
-      const url = "/item/rename/" + [...this.folderPath, this.selectedFile.name].join("/")
-      await api.post(url, {"newName": newName})
+      const url = "/item/" + [...this.folderPath, this.selectedFile.name].join("/")
+      await api.patch(url, {"newName": newName})
       await this.updateFolder()
     },
 

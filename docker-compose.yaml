@@ -4,7 +4,7 @@ services:
 
   frontend:
     build: ./frontend
-    image: black-hole-frontend:v0.1
+    image: black-hole-frontend:v0.2
     container_name: frontend
     ports:
       - "9999:80"
@@ -15,7 +15,7 @@ services:
 
   backend:
     build: .
-    image: black-hole-backend:v0.1
+    image: black-hole-backend:v1.0
     environment:
       DB_HOST: mysql
       DB_PORT: 3306
