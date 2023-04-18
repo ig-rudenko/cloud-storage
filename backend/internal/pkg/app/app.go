@@ -2,20 +2,19 @@ package app
 
 import (
 	"fmt"
-	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
 	"net/http"
 	_ "web/backend/docs"
-	"web/backend/internal/app/endpoint"
-	"web/backend/internal/app/middleware"
-	"web/backend/internal/app/model"
-	"web/backend/internal/app/server"
-	"web/backend/internal/app/service"
-	"web/backend/internal/pkg/database/mysqldb"
-	"web/backend/internal/pkg/filestorage/localstorage"
-	"web/backend/internal/pkg/token"
+	"web/backend/internal/endpoint"
+	"web/backend/internal/middleware"
+	"web/backend/internal/model"
+	"web/backend/internal/server"
+	"web/backend/internal/service"
+	"web/backend/pkg/database/mysqldb"
+	"web/backend/pkg/filestorage/localstorage"
+	"web/backend/pkg/token/jwt"
 )
 
 // App ...
@@ -51,7 +50,7 @@ func New() (*App, error) {
 	fileStorage := localstorage.New(fileStorageConfig)
 
 	// Для создания токенов используем JWT Creator
-	JWTCreator := token.New(serverConfig.SecretKey)
+	JWTCreator := jwt.New(serverConfig.SecretKey)
 
 	// Сервис
 	mainService := service.New(db, fileStorage)
@@ -59,11 +58,11 @@ func New() (*App, error) {
 	// Endpoints для обработки запросов
 	endpoints := endpoint.New(mainService, JWTCreator)
 
-	app.server.Engine.Use(cors.New(cors.Config{
-		AllowOrigins: []string{"*"},
-		//AllowMethods: []string{"POST", "PUT", "PATCH", "DELETE"},
-		//AllowHeaders: []string{"Content-Type,access-control-allow-origin, access-control-allow-headers"},
-	}))
+	//app.server.Engine.Use(cors.New(cors.Config{
+	//	AllowOrigins: []string{"*"},
+	//	AllowMethods: []string{"POST", "PUT", "PATCH", "DELETE"},
+	//	AllowHeaders: []string{"Content-Type,access-control-allow-origin, access-control-allow-headers"},
+	//}))
 
 	// Документация
 	app.server.Engine.GET("/api/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
@@ -91,6 +90,7 @@ func New() (*App, error) {
 		apiRouter.PATCH("/item/*path", endpoints.RenameFile)
 		apiRouter.DELETE("/item/*path", endpoints.DeleteItem)
 	}
+
 	// Define a route for testing authorization
 	apiRouter.GET("/me", func(c *gin.Context) {
 		// Get user id from Gin context
@@ -112,4 +112,8 @@ func (a *App) Run() error {
 		return err
 	}
 	return nil
+}
+
+func (a *App) Stop() {
+	// Остановка
 }

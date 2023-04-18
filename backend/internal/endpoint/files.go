@@ -16,7 +16,7 @@ import (
 // @ID 				get-files-list
 // @Produce			json
 // @Param 			path path string true "path to directory"
-// @Success        	200 {object} []model.FileInfo "user's files"
+// @Success        	200 {object} []userFile "user's files"
 // @Failure			400 {object} errorResponse "invalid user or path"
 // @Failure			500 {object} errorResponse "unable to access user storage"
 // @Router         	/api/items/{path} [get]
@@ -34,7 +34,7 @@ func (e *Endpoint) GetFilesHandler(c *gin.Context) {
 	}
 
 	// Получаем файлы
-	fileInfos, err := e.service.GetUserFiles(userPath)
+	filesInfos, err := e.service.GetUserFiles(userPath)
 	if err != nil {
 		if strings.Contains(err.Error(), "invalid path") {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid path"})
@@ -44,11 +44,26 @@ func (e *Endpoint) GetFilesHandler(c *gin.Context) {
 		return
 	}
 
-	// Если нет файлов, то отправляем пустой массив
-	if fileInfos == nil {
+	if filesInfos == nil {
+		// Если нет файлов, то отправляем пустой массив
 		c.String(http.StatusOK, "[]")
 	} else {
-		c.JSON(http.StatusOK, fileInfos)
+
+		var userFiles = make([]userFile, 0, len(filesInfos))
+
+		for _, info := range filesInfos {
+			userFiles = append(
+				userFiles,
+				userFile{
+					Name:    info.Name(),
+					Size:    info.Size(),
+					IsDir:   info.IsDir(),
+					ModTime: info.ModTime().Format("15:04 / 01.02.2006"),
+				},
+			)
+		}
+
+		c.JSON(http.StatusOK, userFiles)
 	}
 
 }

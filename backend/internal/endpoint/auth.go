@@ -5,8 +5,30 @@ import (
 	"github.com/gin-gonic/gin"
 	"net/http"
 	"strconv"
-	"web/backend/internal/app/model"
+	"web/backend/internal/model"
 )
+
+func (e *Endpoint) parseUser(c *gin.Context) (*model.User, bool) {
+	// Get user id from Gin context
+	userID, _ := c.Get("user_id")
+	if userID == nil {
+		newErrorResponse(c, http.StatusBadRequest, "invalid user")
+		return nil, false
+	}
+
+	// Конвертируем ID пользователя из строки в int
+	id, err := strconv.Atoi(userID.(string))
+	if err != nil {
+		newErrorResponse(c, http.StatusBadRequest, "invalid user id")
+		return nil, false
+	}
+
+	// Создаем пользователя
+	user := &model.User{
+		ID: uint(id),
+	}
+	return user, true
+}
 
 // RegisterNewUser 	godoc
 // @Summary        	Регистрация нового пользователя.

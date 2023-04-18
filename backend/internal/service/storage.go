@@ -3,10 +3,11 @@ package service
 import (
 	"fmt"
 	"io"
+	"io/fs"
 	"mime/multipart"
 	"strings"
 	"sync"
-	"web/backend/internal/app/model"
+	"web/backend/internal/model"
 )
 
 func (s *Service) ValidatePath(user *model.User, path string) (string, error) {
@@ -19,7 +20,7 @@ func (s *Service) ValidatePath(user *model.User, path string) (string, error) {
 }
 
 // GetUserFiles Получаем список файлов и папок для пользовательского пути в хранилище
-func (s *Service) GetUserFiles(path string) ([]model.FileInfo, error) {
+func (s *Service) GetUserFiles(path string) ([]fs.FileInfo, error) {
 	var err error
 
 	// Получаем из хранилища данные

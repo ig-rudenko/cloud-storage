@@ -3,12 +3,12 @@ package localstorage
 import (
 	"fmt"
 	"io"
-	"log"
+	"io/fs"
 	"mime/multipart"
 	"os"
 	"path/filepath"
 	"strings"
-	"web/backend/internal/app/model"
+	"web/backend/internal/model"
 )
 
 type Storage struct {
@@ -47,42 +47,25 @@ func (s *Storage) ValidateUserStoragePath(user *model.User, path string) (validP
 	return validPath, err
 }
 
-func (s *Storage) ListUserFiles(path string) ([]model.FileInfo, error) {
+func (s *Storage) ListUserFiles(path string) ([]fs.FileInfo, error) {
 	// Открываем директорию по заданному пути
 	dir, err := os.Open(path)
 	if err != nil {
-		return []model.FileInfo{}, err
+		return nil, err
 	}
 
-	defer func(dir *os.File) {
-		err := dir.Close()
-		if err != nil {
-			return
-		}
-	}(dir)
+	defer dir.Close()
 
 	// Получаем список файлов и папок в директории
 	files, err := dir.Readdir(-1)
 	if err != nil {
-		return []model.FileInfo{}, err
+		return nil, err
 	}
 
-	var fileInfos []model.FileInfo
-	for _, file := range files {
-		fileInfo := model.FileInfo{
-			Name:    file.Name(),
-			Size:    file.Size(),
-			IsDir:   file.IsDir(),
-			ModTime: file.ModTime().Format("15:04 / 01.02.2006"),
-		}
-		fileInfos = append(fileInfos, fileInfo)
-	}
-
-	return fileInfos, nil
+	return files, nil
 }
 
 func (s *Storage) SaveFile(file *multipart.FileHeader, path string) error {
-	log.Println(path)
 	src, err := file.Open()
 	if err != nil {
 		return err

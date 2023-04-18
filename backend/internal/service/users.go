@@ -2,7 +2,7 @@ package service
 
 import (
 	"strconv"
-	"web/backend/internal/app/model"
+	"web/backend/internal/model"
 )
 
 func (s *Service) InitUser(user *model.User) error {

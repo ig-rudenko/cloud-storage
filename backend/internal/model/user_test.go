@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"github.com/stretchr/testify/assert"
 	"testing"
-	"web/backend/internal/app/model"
+	"web/backend/internal/model"
 )
 
 func TestUser_Validate(t *testing.T) {

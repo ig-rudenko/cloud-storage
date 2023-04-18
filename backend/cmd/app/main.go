@@ -2,6 +2,9 @@ package main
 
 import (
 	"log"
+	"os"
+	"os/signal"
+	"syscall"
 	"web/backend/internal/pkg/app"
 )
 
@@ -24,7 +27,19 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	if err := a.Run(); err != nil {
-		log.Fatal(err)
-	}
+
+	go func() {
+		log.Println("Starting REST API Server")
+		if err := a.Run(); err != nil {
+			log.Fatal(err)
+		}
+	}()
+
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGTERM, syscall.SIGINT)
+
+	<-quit
+
+	log.Println("Shutting down server")
+	a.Stop()
 }
