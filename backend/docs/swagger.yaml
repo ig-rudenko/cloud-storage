@@ -32,14 +32,7 @@ definitions:
       refreshToken:
         type: string
     type: object
-  endpoint.userForm:
-    properties:
-      password:
-        type: string
-      username:
-        type: string
-    type: object
-  model.FileInfo:
+  endpoint.userFile:
     properties:
       isDir:
         type: boolean
@@ -49,6 +42,13 @@ definitions:
         type: string
       size:
         type: integer
+    type: object
+  endpoint.userForm:
+    properties:
+      password:
+        type: string
+      username:
+        type: string
     type: object
 host: localhost:8080
 info:
@@ -259,7 +259,7 @@ paths:
           description: user's files
           schema:
             items:
-              $ref: '#/definitions/model.FileInfo'
+              $ref: '#/definitions/endpoint.userFile'
             type: array
         "400":
           description: invalid user or path

@@ -427,7 +427,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/model.FileInfo"
+                                "$ref": "#/definitions/endpoint.userFile"
                             }
                         }
                     },
@@ -499,18 +499,7 @@ const docTemplate = `{
                 }
             }
         },
-        "endpoint.userForm": {
-            "type": "object",
-            "properties": {
-                "password": {
-                    "type": "string"
-                },
-                "username": {
-                    "type": "string"
-                }
-            }
-        },
-        "model.FileInfo": {
+        "endpoint.userFile": {
             "type": "object",
             "properties": {
                 "isDir": {
@@ -524,6 +513,17 @@ const docTemplate = `{
                 },
                 "size": {
                     "type": "integer"
+                }
+            }
+        },
+        "endpoint.userForm": {
+            "type": "object",
+            "properties": {
+                "password": {
+                    "type": "string"
+                },
+                "username": {
+                    "type": "string"
                 }
             }
         }
